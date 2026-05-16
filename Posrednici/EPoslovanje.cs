@@ -65,4 +65,39 @@ public class EPoslovanje : IPosrednik
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("apiKey").GetString()!;
     }
+
+    public Task<string> UlazniUBLAsync(string id, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<string> IzlazniUBLAsync(string id, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Guid> EvidentirajUBLAsync(string ubl, CancellationToken token = default)
+    {
+        throw new NotImplementedException();
+    }
 }

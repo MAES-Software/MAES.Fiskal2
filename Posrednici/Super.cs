@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -14,261 +15,130 @@ public class Super : IPosrednik
     public string Username { get; set; } = "";
     public string Password { get; set; } = "";
 
-    static readonly JsonSerializerOptions jsonOpts = new(JsonSerializerDefaults.Web);
-    static SuperTokenResponse? token;
+    static KeyValuePair<string, DateTime>? token = null;
 
-    async Task<SuperTokenResponse> getTokenAsync(HttpClient client)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "Token");
-
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["grant_type"] = "password",
-            ["username"]   = Username,
-            ["password"]   = Password
-        });
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"SUPER token error: {json}");
-
-        return JsonSerializer.Deserialize<SuperTokenResponse>(json, jsonOpts)!;
-    }
-
-    public async Task<IEnumerable<IzlazniERacun>> IzlazniAsync(DateTime from, DateTime to)
+    async Task<JsonDocument> postRequest(string uri, Dictionary<string, string> body, CancellationToken cancellationToken)
     {
         using var client = new HttpClient();
         client.BaseAddress = new Uri(IsDev ? URI_DEV : URI);
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        var token = await getTokenAsync(client);
+        if (token == null || DateTime.UtcNow >= token.Value.Value)
+        {
+            using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
+            tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "password", ["username"] = Username, ["password"] = Password });
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "api/SendingInvoice/GetSendingInvoiceList");
+            var tokenResponse = await client.SendAsync(tokenRequest, cancellationToken);
 
-        // Headers
+            if (!tokenResponse.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom dohvaćanja tokena");
+
+            using var doc = JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync(cancellationToken));
+
+            token = new KeyValuePair<string, DateTime>(
+                doc.RootElement.GetProperty("access_token").GetString()!,
+                DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32() - 60)
+            );
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.access_token);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token!.Value.Key);
+        request.Content = new FormUrlEncodedContent(body);
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
-        // Body
-        var body = new Dictionary<string, string>
+        var response = await client.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom slanja zahtjeva: {uri}");
+
+        var jsonDocument = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        if(jsonDocument.RootElement.GetProperty("ErrorMessage").GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
+        return jsonDocument;
+    }
+
+    public Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public async Task<byte[]> UlazniPdfAsync(string id, CancellationToken cancellationToken = default) => Convert.FromBase64String((await postRequest("api/Invoice/GetInvoiceDetailVisualization", new Dictionary<string, string>
+    {
+        ["MessageId"] = Guid.NewGuid().ToString(),
+        ["Guid"] = id.ToString()
+    }, cancellationToken)).RootElement.GetProperty("InvoiceDetailVisualization").GetString()!);
+
+    public async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    {
+        var jsonDocument = await postRequest("api/Invoice/GetInvoiceList", new Dictionary<string, string>
         {
             ["MessageId"] = Guid.NewGuid().ToString(),
             ["CompanyGuid"] = BusinessGuid,
             ["DateFrom"] = from.ToString("yyyy-MM-dd"),
             ["DateTo"] = to.ToString("yyyy-MM-dd")
-        };
+        }, cancellationToken);
 
-        request.Content = new FormUrlEncodedContent(body);
-        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException(json);
-
-        var result = JsonSerializer.Deserialize<SendingInvoiceListResponse>(json, jsonOpts)!;
-
-        if (!string.IsNullOrEmpty(result.ErrorMessage))
-            throw new Exception(result.ErrorMessage);
-
-        return [.. result.Invoices.Select(x => new IzlazniERacun
+        return jsonDocument.RootElement.GetProperty("Invoices").EnumerateArray().Select(x => new UlazniERacun
         {
-            Broj = x.Number,
-            Datum = x.IssueDate,
-            Status = IzlazniERacunStatus.Poslano, // <-- ovo treba popravit
-            PartnerNaziv = x.Supplier,
-            PartnerAdresa = $"{x.SupplierAddress}, {x.SupplierZip} {x.SupplierCity}",
-            PartnerOIB = x.SupplierOib,
-            Guid = x.Guid
-        })];
+            Broj = x.GetProperty("UniqueId").GetString() ?? "",
+            Datum = x.GetProperty("IssueDate").GetDateTime(),
+            Partner = x.GetProperty("Supplier").GetString() ?? "",
+            PartnerOIB = x.GetProperty("SupplierOib").GetString() ?? "",
+            PartnerAdresa =
+                $"{x.GetProperty("SupplierAddress").GetString()}, " +
+                $"{x.GetProperty("SupplierZip").GetString()} " +
+                $"{x.GetProperty("SupplierCity").GetString()}",
+            Guid = x.GetProperty("Guid").GetGuid(),
+            Status = UlazniERacunStatus.Zaprimljeno // treba popravit
+        });
     }
-    public async Task<byte[]> DohvatiPdfAsync(string id, CancellationToken cancellationToken)
+
+    public Task<string> IzlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri(IsDev ? URI_DEV : URI );
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        throw new NotImplementedException();
+    }
 
-        token = await getTokenAsync(client);
+    public Task<byte[]> IzlazniPdfAsync(string id, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "api/Invoice/GetInvoiceDetailVisualization");
-
-        // Headers
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.access_token);
-
-        var body = new Dictionary<string, string>
+    public async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken)
+    {
+        var jsonDocument = await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
         {
             ["MessageId"] = Guid.NewGuid().ToString(),
-            ["Guid"] = id.ToString()
-        };
-
-        request.Content = new FormUrlEncodedContent(body);
-        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-
-        var response = await client.SendAsync(request, cancellationToken);
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"SUPER GetInvoiceDetailVisualization error: {json}");
-
-        var result = JsonSerializer.Deserialize<InvoiceDetailVisualizationResponse>(json, jsonOpts)!;
-        return Convert.FromBase64String(result.InvoiceDetailVisualization);
-    }
-
-    public async Task<IEnumerable<UlazniERacun>> UlazniAsync(DateTime from, DateTime to)
-    {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri(IsDev ? URI_DEV : URI );
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        token = await getTokenAsync(client);
-
-        using var request = new HttpRequestMessage(
-            HttpMethod.Post,
-            "api/Invoice/GetInvoiceList");
-
-        // Headers
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.access_token);
-
-        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["MessageId"]   = Guid.NewGuid().ToString(),
             ["CompanyGuid"] = BusinessGuid,
             ["DateFrom"] = from.ToString("yyyy-MM-dd"),
             ["DateTo"] = to.ToString("yyyy-MM-dd")
-        });
+        }, cancellationToken);
 
-        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException(json);
-
-        var result = JsonSerializer.Deserialize<SuperInvoiceListResponse>(json, jsonOpts)!;
-
-        return result.Invoices.Select(x => new UlazniERacun()
+        return jsonDocument.RootElement.GetProperty("Invoices").EnumerateArray().Select(x => new IzlazniERacun
         {
-            Guid = x.Guid,
-            Broj = x.Number,
-            Datum = x.IssueDate,
-            Partner = x.Supplier,
-            PartnerOIB = x.SupplierOib,
-            PartnerAdresa = $"{x.SupplierAddress}, {x.SupplierCity} {x.SupplierZip}"
+            Broj = x.GetProperty("UniqueId").GetString() ?? "",
+            Datum = x.GetProperty("IssueDate").GetDateTime(),
+            PartnerNaziv = x.GetProperty("Supplier").GetString() ?? "",
+            PartnerOIB = x.GetProperty("SupplierOib").GetString() ?? "",
+            PartnerAdresa =
+                $"{x.GetProperty("SupplierAddress").GetString()}, " +
+                $"{x.GetProperty("SupplierZip").GetString()} " +
+                $"{x.GetProperty("SupplierCity").GetString()}",
+            Guid = x.GetProperty("Guid").GetGuid(),
+            Status = IzlazniERacunStatus.Poslano // treba popravit
         });
     }
-    
-    public async Task<Guid> EvidentirajUBLAsync(string ubl)
+
+    public async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
     {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri(IsDev ? URI_DEV : URI );
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        ["MessageId"]   = Guid.NewGuid().ToString(),
+        ["CompanyGuid"] = BusinessGuid,
+        ["Base64EncodedUbl"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl)),
+        ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
+    }, cancellationToken);
 
-        string base64Ubl = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl));
+    public async Task EvidentirajUplatuAsync(string id, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 
-        token = await getTokenAsync(client);
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, "api/SendingInvoice/SendSendingInvoiceUbl");
-
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.access_token);
-
-        request.Content = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["MessageId"]   = Guid.NewGuid().ToString(),
-            ["CompanyGuid"] = BusinessGuid,
-            ["Base64EncodedUbl"] = base64Ubl,
-            ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
-        });
-
-        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"SUPER SendSendingInvoiceUbl error: {json}");
-
-        var result = JsonSerializer.Deserialize<SuperSendInvoiceResponse>(json, jsonOpts)!;
-
-        if (!string.IsNullOrWhiteSpace(result.ErrorMessage)) throw new Exception(result.ErrorMessage);
-
-        return result.Guid;
+    public Task OdbijRacunAsync(string id, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
-}
-
-sealed class SuperTokenResponse
-{
-    public string access_token { get; set; } = "";
-    public string token_type { get; set; } = "";
-    public int expires_in { get; set; }
-    public string userName { get; set; } = "";
-    public string issued { get; set; } = "";
-    public string expires { get; set; } = "";
-}
-
-sealed class SuperInvoiceListResponse
-{
-    public string MessageId { get; set; } = "";
-    public string? ErrorMessage { get; set; }
-    public List<SuperInvoiceDto> Invoices { get; set; } = [];
-}
-
-sealed class SuperInvoiceDto
-{
-    public int UniqueId { get; set; }
-    public string Number { get; set; } = "";
-    public Guid Guid { get; set; }
-    public DateTime IssueDate { get; set; }
-    public string IssueTime { get; set; } = "";
-    public string Supplier { get; set; } = "";
-    public string SupplierOib { get; set; } = "";
-    public string SupplierAddress { get; set; } = "";
-    public string SupplierCity { get; set; } = "";
-    public string SupplierZip { get; set; } = "";
-    public int InvoiceStatus { get; set; }
-}
-
-sealed class SuperSendInvoiceResponse
-{
-    public Guid MessageId { get; set; }
-    public string? ErrorMessage { get; set; }
-    public Guid Guid { get; set; }
-}
-
-sealed class InvoiceDetailVisualizationResponse
-{
-    public string MessageId { get; set; } = "";
-    public string ErrorMessage { get; set; } = "";
-    public string InvoiceDetailVisualization { get; set; } = "";
-}
-
-sealed class SendingInvoiceListResponse
-{
-    public string MessageId { get; set; } = "";
-    public string ErrorMessage { get; set; } = "";
-    public string UniqueId { get; set; } = "";
-    public Guid Guid { get; set; }
-    public DateTime IssueDate { get; set; }
-    public string IssueTime { get; set; } = "";
-    public string Supplier { get; set; } = "";
-    public string SupplierOib { get; set; } = "";
-    public List<SendingInvoiceItem> Invoices { get; set; } = [];
-}
-
-sealed class SendingInvoiceItem
-{
-    public string UniqueId { get; set; } = "";
-    public string Number { get; set; } = "";
-    public Guid Guid { get; set; }
-    public DateTime IssueDate { get; set; }
-    public string IssueTime { get; set; } = "";
-    public string Supplier { get; set; } = "";
-    public string SupplierOib { get; set; } = "";
-    public string SupplierAddress { get; set; } = "";
-    public string SupplierCity { get; set; } = "";
-    public string SupplierZip { get; set; } = "";
-    public string SendingInvoiceStatus { get; set; } = "";
 }
