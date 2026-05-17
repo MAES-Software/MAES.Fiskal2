@@ -3,6 +3,9 @@ using MAES.Fiskal2.Posrednici;
 
 namespace MAES.Fiskal2;
 
+/// <summary>
+/// Sučelje koje opisuje osnovne operacije za posrednike hrvatskog e-fiskalizacijskog sustava.
+/// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(Super), "Super")]
 [JsonDerivedType(typeof(EPoslovanje), "EPoslovanje")]
