@@ -4,6 +4,18 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+    <!-- NuGet Metadata -->
+    <PackageId>MAES.Fiskal2</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Roko Tomović</Authors>
+    <Company>MAES</Company>
+    <Description>C# biblioteka za rad s Hrvatskim fiskalnim posrednicima</Description>
+    <PackageProjectUrl>https://github.com/MAES-Software/MAES.Fiskal2</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/MAES-Software/MAES.Fiskal2</RepositoryUrl>
+    <PackageTags>Fiskalizacija2.0;Fiscalization2.0;Fiskal2;Fiskalizacija;Posrednici;</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
   </PropertyGroup>
 
 </Project>
