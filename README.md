@@ -21,16 +21,21 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije:
 - `EPoslovanje` — rad s API-jem ePoslovanje.hr
 - `Super` — rad s API-jem Super.hr
 
-Obje klase implementiraju `IPosrednik`, ali su neke metode još uvijek označene kao `NotImplementedException`. Trenutna implementacija uključuje osnovne HTTP zahtjeve i autorizaciju, ali još treba dovršiti potpuni rad s UBL dokumentima, PDF-om i statusima.
+| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `bizBox` | `Editel` |
+|---|:---:|:---:|:---:|:---:|:---:|
+| Dohvat ulaznih e-računa | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Dohvat izlaznih e-računa | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Dohvat UBL/XML sadržaja | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Dohvat PDF sadržaja | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅* | ❌ | ❌ | ❌ |
+| Evidentiranje uplate | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Odbijanje računa | ✅ | ❌ | ❌ | ❌ | ❌ |
 
-## Struktura projekta
+> `Super` i `EPoslovanje` su jedini trenutno implementirani posrednici u ovom repozitoriju. Ostali navedeni pružatelji su značajni u Hrvatskoj, ali za njih još nije dodana podrška.
 
-- `IPosrednik.cs` — zajedničko sučelje za sve fiskalne posrednike
-- `UlazniERacun.cs` — model ulaznog računa
-- `IzlazniERacun.cs` — model izlaznog računa
-- `Posrednici/EPoslovanje.cs` — implementacija za ePoslovanje
-- `Posrednici/Super.cs` — implementacija za Super
-- `MAES.Fiskal2.csproj` — .NET 10 projekt
+## Zahtjevi
+
+- .NET SDK 10
 
 ## Kako koristiti
 
@@ -75,4 +80,4 @@ dotnet pack MAES.Fiskal2.csproj --configuration Release
 
 ## Licenca
 
-Repository trenutno nema definiranu licencu. Preporučuje se dodavanje `LICENSE` datoteke ako planirate javno objaviti projekt.
+Ovaj projekt je licenciran pod MIT licencom. Vidjeti [LICENSE](LICENSE) datoteku za više detalja.
