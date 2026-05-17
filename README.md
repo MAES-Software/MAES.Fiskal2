@@ -1,13 +1,13 @@
 # MAES.Fiskal2
 
-MAES.Fiskal2 je C# biblioteka za rad s fiskalnim posrednicima hrvatskog e-fiskalizacijskog sustava. Cilj projekta je izraditi zajednički zajednički (common) sloj za sve posrednike koji podržavaju razmjenu ulaznih i izlaznih e-računa.
+MAES.Fiskal2 je C# biblioteka za rad s Hrvatskim fiskalnim posrednicima. Cilj projekta je izraditi zajednički sloj za sve posrednike koji podržavaju razmjenu ulaznih i izlaznih e-računa u C#.
 
 ## Što projekt radi
 
 Projekt definira zajedničko sučelje `IPosrednik` koje opisuje osnovne operacije za posrednike fiskalizacije:
 
 - dohvat ulaznih i izlaznih e-računa
-- dohvat UBL/XML i PDF sadržaja računa
+- dohvat UBL i PDF sadržaja računa
 - evidentiranje UBL dokumenta
 - evidentiranje uplate
 - odbijanje računa
@@ -16,38 +16,46 @@ Modeli `UlazniERacun` i `IzlazniERacun` predstavljaju minimalne informacije o ra
 
 ## Trenutno podržani posrednici
 
-U `Posrednici/` direktoriju nalaze se konkretne implementacije:
-
-- `EPoslovanje` — rad s API-jem ePoslovanje.hr
-- `Super` — rad s API-jem Super.hr
+U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
 | Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `bizBox` | `Editel` |
 |---|:---:|:---:|:---:|:---:|:---:|
 | Dohvat ulaznih e-računa | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Dohvat izlaznih e-računa | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Dohvat UBL/XML sadržaja | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Dohvat UBL sadržaja | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Dohvat PDF sadržaja | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Evidentiranje UBL dokumenta | ✅ | ✅* | ❌ | ❌ | ❌ |
 | Evidentiranje uplate | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Odbijanje računa | ✅ | ❌ | ❌ | ❌ | ❌ |
 
-> `Super` i `EPoslovanje` su jedini trenutno implementirani posrednici u ovom repozitoriju. Ostali navedeni pružatelji su značajni u Hrvatskoj, ali za njih još nije dodana podrška.
-
 ## Zahtjevi
 
 - .NET SDK 10
 
-## Kako koristiti
+## Instalacija
 
-1. Klonirajte repo.
-2. Otvorite projekt u Visual Studio ili drugom .NET IDE-u.
-3. Izgradite s `dotnet build`.
-4. Kreirajte instancu odgovarajućeg posrednika i implementirajte pozive prema `IPosrednik`.
+Instalirajte paket iz NuGeta:
+
+```bash
+dotnet add package MAES.Fiskal2
+```
+
+Ili direktno u datoteku `.csproj`:
+
+```xml
+<ItemGroup>
+    <PackageReference Include="MAES.Fiskal2" Version="*" />
+</ItemGroup>
+```
+
+## Kako koristiti
 
 Primjer inicijalizacije posrednika:
 
 ```csharp
-var posrednik = new MAES.Fiskal2.Posrednici.Super
+using MAES.Fiskal2.Posrednici;
+
+var posrednik = new Super
 {
     IsDev = true,
     BusinessGuid = "...",
@@ -57,6 +65,50 @@ var posrednik = new MAES.Fiskal2.Posrednici.Super
 
 var racuni = await posrednik.UlazniListAsync(DateTime.Today.AddDays(-7), DateTime.Today);
 ```
+
+## Dostupne metode
+
+Sučelje `IPosrednik` nudi sljedeće metode:
+
+### Dohvat ulaznih e-računa
+- `Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)`
+    
+    Dohvaća popis ulaznih računa u vremenskom rasponu
+
+- `Task<string> UlazniUBLAsync(string id, CancellationToken token = default)`
+    
+    Dohvaća XML/UBL sadržaj ulaznog računa
+
+- `Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default)`
+
+    Dohvaća PDF sadržaj ulaznog računa
+
+### Dohvat izlaznih e-računa
+- `Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)`
+
+    Dohvaća popis izlaznih računa u vremenskom rasponu
+
+- `Task<string> IzlazniUBLAsync(string id, CancellationToken token = default)`
+
+    Dohvaća XML/UBL sadržaj izlaznog računa
+
+- `Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default)`
+
+    Dohvaća PDF sadržaj izlaznog računa
+
+
+### Operacije na računima
+- `Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)`
+
+    Evidentira UBL dokument
+    
+- `Task EvidentirajUplatuAsync(string id, CancellationToken token = default)`
+
+    Evidentira uplatu za račun
+
+- `Task OdbijRacunAsync(string id, CancellationToken token = default)`
+
+    Odbija račun
 
 ## Izgradnja i pakiranje
 
