@@ -17,14 +17,17 @@ public class Super : IPosrednik
     /// Označava je li povezivanje na razvojni (test) API endpoint.
     /// </summary>
     public bool IsDev { get; set; }
+    
     /// <summary>
     /// Jedinstveni identifikator poslovnog subjekta u Super sustavu.
     /// </summary>
     public string BusinessGuid { get; set; } = "";
+
     /// <summary>
     /// Korisničko ime za autentifikaciju na Super API-u.
     /// </summary>
     public string Username { get; set; } = "";
+
     /// <summary>
     /// Lozinka za autentifikaciju na Super API-u.
     /// </summary>

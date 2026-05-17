@@ -16,14 +16,17 @@ public class EPoslovanje : IPosrednik
     /// Označava je li povezivanje na razvojni (test) API endpoint.
     /// </summary>
     public bool IsDev { get; set; }
+
     /// <summary>
     /// OIB poslovnog subjekta.
     /// </summary>
     public string OIB { get; set; } = "";
+
     /// <summary>
     /// Korisničko ime za autentifikaciju.
     /// </summary>
     public string Username { get; set; } = "";
+    
     /// <summary>
     /// Lozinka za autentifikaciju.
     /// </summary>
