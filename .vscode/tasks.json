@@ -20,8 +20,9 @@
         {
             "label": "Pack",
             "type": "shell",
-            "command": "dotnet pack",
+            "command": "dotnet",
             "args": [
+                "pack",
                 "${workspaceFolder}/MAES.Fiskal2.csproj",
                 "--configuration",
                 "Release"
@@ -32,9 +33,11 @@
         {
             "label": "Push",
             "type": "shell",
-            "command": "dotnet nuget push",
+            "command": "dotnet",
             "args": [
-                "${workspaceFolder}/bin/Release/*.nupkg",
+                "nuget",
+                "push",
+                "${workspaceFolder}/bin/Release/MAES.Fiskal2.0.1.0.nupkg",
                 "--api-key",
                 "${input:nugetApiKey}",
                 "--source",
