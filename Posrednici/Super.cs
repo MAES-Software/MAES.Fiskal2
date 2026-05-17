@@ -5,6 +5,9 @@ using System.Text.Json;
 
 namespace MAES.Fiskal2.Posrednici;
 
+/// <summary>
+/// Implementacija posrednika za Super, https://www.super.hr/
+/// </summary>
 public class Super : IPosrednik
 {
     const string URI = "https://api.super.hr/";
@@ -41,13 +44,16 @@ public class Super : IPosrednik
             );
         }
 
+        body["MessageId"] = Guid.NewGuid().ToString();
+        body["CompanyGuid"] = BusinessGuid;
+
         using var request = new HttpRequestMessage(HttpMethod.Post, uri);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token!.Value.Key);
         request.Content = new FormUrlEncodedContent(body);
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, cancellationToken);
 
         if (!response.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom slanja zahtjeva: {uri}");
 
@@ -56,14 +62,22 @@ public class Super : IPosrednik
         return jsonDocument;
     }
 
-    public Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var jDoc = await postRequest("api/Invoice/GetInvoiceDetail", new Dictionary<string, string>
+        {
+            ["Guid"] = id.ToString()
+        }, cancellationToken);
+
+        if (jDoc.RootElement.TryGetProperty("InvoiceDetailUbl", out var el) || jDoc.RootElement.TryGetProperty("InvoiceUbl", out el) || jDoc.RootElement.TryGetProperty("InvoiceDetail", out el))
+        {
+            return Encoding.UTF8.GetString(Convert.FromBase64String(el.GetString()!));
+        }
+        throw new Exception("UBL not found in response");
     }
 
     public async Task<byte[]> UlazniPdfAsync(string id, CancellationToken cancellationToken = default) => Convert.FromBase64String((await postRequest("api/Invoice/GetInvoiceDetailVisualization", new Dictionary<string, string>
     {
-        ["MessageId"] = Guid.NewGuid().ToString(),
         ["Guid"] = id.ToString()
     }, cancellationToken)).RootElement.GetProperty("InvoiceDetailVisualization").GetString()!);
 
@@ -71,8 +85,6 @@ public class Super : IPosrednik
     {
         var jsonDocument = await postRequest("api/Invoice/GetInvoiceList", new Dictionary<string, string>
         {
-            ["MessageId"] = Guid.NewGuid().ToString(),
-            ["CompanyGuid"] = BusinessGuid,
             ["DateFrom"] = from.ToString("yyyy-MM-dd"),
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
@@ -92,22 +104,40 @@ public class Super : IPosrednik
         });
     }
 
-    public Task<string> IzlazniUBLAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<string> IzlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var jDoc = await postRequest("api/SendingInvoice/GetSendingInvoiceDetail", new Dictionary<string, string>
+        {
+            ["Guid"] = id.ToString()
+        }, cancellationToken);
+
+        if (jDoc.RootElement.TryGetProperty("SendingInvoiceUbl", out var el) || jDoc.RootElement.TryGetProperty("InvoiceUbl", out el) || jDoc.RootElement.TryGetProperty("SendingInvoiceDetail", out el))
+        {
+            return Encoding.UTF8.GetString(Convert.FromBase64String(el.GetString()!));
+        }
+        throw new Exception("UBL not found in response");
     }
 
-    public Task<byte[]> IzlazniPdfAsync(string id, CancellationToken cancellationToken = default)
+    public async Task<byte[]> IzlazniPdfAsync(string id, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var jDoc = await postRequest("api/SendingInvoice/GetSendingInvoiceDetailVisualization", new Dictionary<string, string>
+        {
+            ["Guid"] = id.ToString()
+        }, cancellationToken);
+
+        var root = jDoc.RootElement;
+
+        if (root.TryGetProperty("SendingInvoiceDetailVisualization", out var el) || root.TryGetProperty("InvoiceDetailVisualization", out el))
+        {
+            return Convert.FromBase64String(el.GetString()!);
+        }
+        throw new Exception("PDF not found in response");
     }
 
     public async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken)
     {
         var jsonDocument = await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
         {
-            ["MessageId"] = Guid.NewGuid().ToString(),
-            ["CompanyGuid"] = BusinessGuid,
             ["DateFrom"] = from.ToString("yyyy-MM-dd"),
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
@@ -129,16 +159,23 @@ public class Super : IPosrednik
 
     public async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
     {
-        ["MessageId"]   = Guid.NewGuid().ToString(),
-        ["CompanyGuid"] = BusinessGuid,
         ["Base64EncodedUbl"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl)),
         ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
     }, cancellationToken);
 
-    public async Task EvidentirajUplatuAsync(string id, CancellationToken cancellationToken = default) => throw new NotImplementedException();
-
-    public Task OdbijRacunAsync(string id, CancellationToken cancellationToken = default)
+    public async Task EvidentirajUplatuAsync(string id, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        await postRequest("api/Invoice/SetInvoicePayment", new Dictionary<string, string>
+        {
+            ["Guid"] = id.ToString()
+        }, cancellationToken);
+    }
+
+    public async Task OdbijRacunAsync(string id, CancellationToken cancellationToken = default)
+    {
+        await postRequest("api/SendingInvoice/RejectSendingInvoice", new Dictionary<string, string>
+        {
+            ["Guid"] = id.ToString()
+        }, cancellationToken);
     }
 }
