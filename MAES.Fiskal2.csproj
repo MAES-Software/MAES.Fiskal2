@@ -10,7 +10,7 @@
     
     <!-- NuGet Metadata -->
     <PackageId>MAES.Fiskal2</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>Roko Tomović</Authors>
     <Company>MAES</Company>
     <Description>C# biblioteka za rad s Hrvatskim fiskalnim posrednicima</Description>

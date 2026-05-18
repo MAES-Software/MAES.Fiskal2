@@ -37,7 +37,7 @@
             "args": [
                 "nuget",
                 "push",
-                "${workspaceFolder}/bin/Release/MAES.Fiskal2.0.1.0.nupkg",
+                "${workspaceFolder}/bin/Release/MAES.Fiskal2.0.1.1.nupkg",
                 "--api-key",
                 "${input:nugetApiKey}",
                 "--source",
