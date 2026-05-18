@@ -30,7 +30,7 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
 ## Zahtjevi
 
-- .NET SDK 10
+- .NET Standard 2.0
 
 ## Instalacija
 
