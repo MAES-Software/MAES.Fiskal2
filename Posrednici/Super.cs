@@ -59,8 +59,8 @@ public class Super : IPosrednik
             );
         }
 
-        body["MessageId"] = Guid.NewGuid().ToString();
-        body["CompanyGuid"] = BusinessGuid;
+        body.Add("MessageId", Guid.NewGuid().ToString());
+        body.Add("CompanyGuid", BusinessGuid);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, uri);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
