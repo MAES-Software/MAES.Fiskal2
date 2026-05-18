@@ -51,7 +51,7 @@ public class Super : IPosrednik
 
             if (!tokenResponse.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom dohvaćanja tokena");
 
-            using var doc = JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync(cancellationToken));
+            using var doc = JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync());
 
             token = new KeyValuePair<string, DateTime>(
                 doc.RootElement.GetProperty("access_token").GetString()!,
@@ -72,7 +72,7 @@ public class Super : IPosrednik
 
         if (!response.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom slanja zahtjeva: {uri}");
 
-        var jsonDocument = JsonDocument.Parse(await response.Content.ReadAsStringAsync(cancellationToken));
+        var jsonDocument = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         if(jsonDocument.RootElement.GetProperty("ErrorMessage").GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
         return jsonDocument;
     }
