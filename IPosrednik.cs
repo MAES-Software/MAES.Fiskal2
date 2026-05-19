@@ -72,13 +72,18 @@ public interface IPosrednik
     /// Evidentira uplatu za račun po njegovom identifikatoru.
     /// </summary>
     /// <param name="id">Identifikator računa čiju uplatu treba evidentirati.</param>
+    /// <param name="date">Datum uplate.</param>
+    /// <param name="amount">Iznos uplate.</param>
+    /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
-    public Task EvidentirajUplatuAsync(string id, CancellationToken token = default);
+    public Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default);
 
     /// <summary>
     /// Odbija račun u fiskalizacijskom procesu prema zadanom identifikatoru.
     /// </summary>
     /// <param name="id">Identifikator računa koji se odbija.</param>
+    /// <param name="razlog">Razlog odbijanja računa.</param>
+    /// <param name="opis">Opis razloga odbijanja.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
-    public Task OdbijRacunAsync(string id, CancellationToken token = default);
+    public Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default);
 }

@@ -88,3 +88,24 @@ public enum IzlazniERacunStatus
     /// </summary>
     Plaćeno = 110 
 }
+
+/// <summary>
+/// Mogući načini plaćanja za evidentiranje uplate izlaznog računa.
+/// </summary>
+public enum NacinPlacanja
+{
+    /// <summary>
+    /// Transakcijski račun.
+    /// </summary>
+    TransakcijskiRaCun = 1,
+
+    /// <summary>
+    /// Obračunsko plaćanje.
+    /// </summary>
+    ObračunskoPlaćanje = 2,
+
+    /// <summary>
+    /// Ostalo.
+    /// </summary>
+    Ostalo = 11
+}

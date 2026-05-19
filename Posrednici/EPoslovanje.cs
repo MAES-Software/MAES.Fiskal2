@@ -94,12 +94,12 @@ public class EPoslovanje : IPosrednik
     /// <summary>
     /// Evidentira uplatu za račun. Nije implementirano.
     /// </summary>
-    public Task EvidentirajUplatuAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+    public Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Odbija račun. Nije implementirano.
     /// </summary>
-    public Task OdbijRacunAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+    public Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) => throw new NotImplementedException();
 
     async Task<string> apiKey(HttpClient client)
     {

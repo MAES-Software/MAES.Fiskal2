@@ -73,7 +73,7 @@ public class Super : IPosrednik
         if (!response.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom slanja zahtjeva: {uri}");
 
         var jsonDocument = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        if(jsonDocument.RootElement.GetProperty("ErrorMessage").GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
+        if(jsonDocument.RootElement.GetProperty("errorMessage").GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
         return jsonDocument;
     }
 
@@ -85,16 +85,13 @@ public class Super : IPosrednik
     /// <returns>XML/UBL sadržaj računa kao tekst.</returns>
     public async Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
-        var jDoc = await postRequest("api/Invoice/GetInvoiceDetail", new Dictionary<string, string>
+        var jDoc = await postRequest("api/Invoice/GetInvoice", new Dictionary<string, string>
         {
             ["Guid"] = id.ToString()
         }, cancellationToken);
 
-        if (jDoc.RootElement.TryGetProperty("InvoiceDetailUbl", out var el) || jDoc.RootElement.TryGetProperty("InvoiceUbl", out el) || jDoc.RootElement.TryGetProperty("InvoiceDetail", out el))
-        {
-            return Encoding.UTF8.GetString(Convert.FromBase64String(el.GetString()!));
-        }
-        throw new Exception("UBL not found in response");
+        if (!jDoc.RootElement.TryGetProperty("invoiceUbl", out var el)) throw new Exception("UBL not found in response");
+        return Encoding.UTF8.GetString(Convert.FromBase64String(el.GetString()));
     }
 
     /// <summary>
@@ -106,7 +103,7 @@ public class Super : IPosrednik
     public async Task<byte[]> UlazniPdfAsync(string id, CancellationToken cancellationToken = default) => Convert.FromBase64String((await postRequest("api/Invoice/GetInvoiceDetailVisualization", new Dictionary<string, string>
     {
         ["Guid"] = id.ToString()
-    }, cancellationToken)).RootElement.GetProperty("InvoiceDetailVisualization").GetString()!);
+    }, cancellationToken)).RootElement.GetProperty("invoiceDetailVisualization").GetString()!);
 
     /// <summary>
     /// Dohvaća popis ulaznih e-računa u zadanom vremenskom rasponu.
@@ -123,7 +120,7 @@ public class Super : IPosrednik
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
 
-        return jsonDocument.RootElement.GetProperty("Invoices").EnumerateArray().Select(x => new UlazniERacun
+        return jsonDocument.RootElement.GetProperty("invoices").EnumerateArray().Select(x => new UlazniERacun
         {
             Broj = x.GetProperty("UniqueId").GetString() ?? "",
             Datum = x.GetProperty("IssueDate").GetDateTime(),
@@ -146,16 +143,14 @@ public class Super : IPosrednik
     /// <returns>XML/UBL sadržaj računa kao tekst.</returns>
     public async Task<string> IzlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
-        var jDoc = await postRequest("api/SendingInvoice/GetSendingInvoiceDetail", new Dictionary<string, string>
+        var jDoc = await postRequest("api/SendingInvoice/GetSendingInvoice", new Dictionary<string, string>
         {
             ["Guid"] = id.ToString()
         }, cancellationToken);
 
-        if (jDoc.RootElement.TryGetProperty("SendingInvoiceUbl", out var el) || jDoc.RootElement.TryGetProperty("InvoiceUbl", out el) || jDoc.RootElement.TryGetProperty("SendingInvoiceDetail", out el))
-        {
-            return Encoding.UTF8.GetString(Convert.FromBase64String(el.GetString()!));
-        }
-        throw new Exception("UBL not found in response");
+        if (!jDoc.RootElement.TryGetProperty("sendingInvoiceUbl", out var el)) throw new Exception("UBL not found in response");
+        return Encoding.UTF8.GetString(Convert.FromBase64String(el.GetString()));
+        
     }
 
     /// <summary>
@@ -173,11 +168,9 @@ public class Super : IPosrednik
 
         var root = jDoc.RootElement;
 
-        if (root.TryGetProperty("SendingInvoiceDetailVisualization", out var el) || root.TryGetProperty("InvoiceDetailVisualization", out el))
-        {
-            return Convert.FromBase64String(el.GetString()!);
-        }
-        throw new Exception("PDF not found in response");
+        if (!root.TryGetProperty("sendingInvoiceDetailVisualization", out var el)) throw new Exception("PDF not found in response");
+        return Convert.FromBase64String(el.GetString());
+        
     }
 
     /// <summary>
@@ -195,7 +188,7 @@ public class Super : IPosrednik
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
 
-        return jsonDocument.RootElement.GetProperty("Invoices").EnumerateArray().Select(x => new IzlazniERacun
+        return jsonDocument.RootElement.GetProperty("invoices").EnumerateArray().Select(x => new IzlazniERacun
         {
             Broj = x.GetProperty("UniqueId").GetString() ?? "",
             Datum = x.GetProperty("IssueDate").GetDateTime(),
@@ -225,8 +218,11 @@ public class Super : IPosrednik
     /// Evidentira uplatu za račun po njegovom identifikatoru.
     /// </summary>
     /// <param name="id">Identifikator računa čiju uplatu treba evidentirati.</param>
+    /// <param name="date">Datum uplate.</param>
+    /// <param name="amount">Iznos uplate.</param>
+    /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public async Task EvidentirajUplatuAsync(string id, CancellationToken cancellationToken = default)
+    public async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
     {
         await postRequest("api/Invoice/SetInvoicePayment", new Dictionary<string, string>
         {
@@ -238,12 +234,16 @@ public class Super : IPosrednik
     /// Odbija račun u fiskalizacijskom procesu prema zadanom identifikatoru.
     /// </summary>
     /// <param name="id">Identifikator računa koji se odbija.</param>
+    /// <param name="razlog">Razlog odbijanja računa.</param>
+    /// <param name="opis">Opis razloga odbijanja.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public async Task OdbijRacunAsync(string id, CancellationToken cancellationToken = default)
+    public async Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken cancellationToken = default)
     {
         await postRequest("api/SendingInvoice/RejectSendingInvoice", new Dictionary<string, string>
         {
-            ["Guid"] = id.ToString()
-        }, cancellationToken);
+            ["Guid"] = id.ToString(),
+            ["RejectReasonType"] = razlog.ToString(),
+            ["RejectionReasonDescription"] = opis
+         }, cancellationToken);
     }
 }
