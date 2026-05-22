@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+        <Invoice
+          xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+          xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+          xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+          xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
+          xmlns:hrextac="urn:mfin.gov.hr:schema:xsd:HRExtensionAggregateComponents-1"
+          xmlns:sac="urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2"
+          xmlns:sig="urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+          <cbc:CustomizationID>urn:cen.eu:en16931:2017#compliant#urn:mfin.gov.hr:cius-2025:1.0#conformant#urn:mfin.gov.hr:ext-2025:1.0</cbc:CustomizationID>
+          <cbc:ProfileID>P1</cbc:ProfileID>
+          <cbc:ID>1-1-1</cbc:ID>
+          <cbc:IssueDate>2026-05-20</cbc:IssueDate>
+          <cbc:IssueTime>18:32:43</cbc:IssueTime>
+          <cbc:DueDate>2026-05-27</cbc:DueDate>
+          <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>
+          <cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode>
+          <cac:AccountingSupplierParty>
+            <cac:Party>
+              <!-- OIB endpoint -->
+              <cbc:EndpointID schemeID="9934">51560545524</cbc:EndpointID>
+              <cac:PartyIdentification>
+                <cbc:ID>9934:51560545524</cbc:ID>
+              </cac:PartyIdentification>
+              <cac:PartyName>
+  				<cbc:Name>MAES Software</cbc:Name>
+  			  </cac:PartyName>
+              <cac:PostalAddress>
+                <cbc:StreetName>Lokrumska 10</cbc:StreetName>
+                <cbc:CityName>Dubrovnik</cbc:CityName>
+                <cbc:PostalZone>20000</cbc:PostalZone>
+                <cac:Country>
+                  <cbc:IdentificationCode>HR</cbc:IdentificationCode>
+                </cac:Country>
+              </cac:PostalAddress>
+              <cac:PartyTaxScheme>
+                <cbc:CompanyID>HR51560545524</cbc:CompanyID>
+                <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+              </cac:PartyTaxScheme>
+              <cac:PartyLegalEntity>
+                <cbc:RegistrationName>MAES Software</cbc:RegistrationName>
+              </cac:PartyLegalEntity>
+              <cac:Contact>
+                <cbc:Name>Roko Tomović</cbc:Name>
+                <cbc:ElectronicMail>roko@maesdbk.hr</cbc:ElectronicMail>
+              </cac:Contact>
+            </cac:Party>
+            <cac:SellerContact>
+              <cbc:ID>51560545524</cbc:ID>
+              <cbc:Name>Roko Tomović</cbc:Name> 
+            </cac:SellerContact>
+          </cac:AccountingSupplierParty>
+          <cac:AccountingCustomerParty>
+            <cac:Party>
+              <cbc:EndpointID schemeID="9934">54030208881</cbc:EndpointID>
+              <cac:PostalAddress>
+                <cbc:StreetName>Potok 20</cbc:StreetName>
+                <cbc:CityName>Trsteno</cbc:CityName>
+                <cbc:PostalZone>20233</cbc:PostalZone>
+                <cac:Country>
+                  <cbc:IdentificationCode>HR</cbc:IdentificationCode>
+                </cac:Country>
+              </cac:PostalAddress>
+              <cac:PartyTaxScheme>
+                <cbc:CompanyID>HR54030208881</cbc:CompanyID>
+                <cac:TaxScheme>
+                  <cbc:ID>VAT</cbc:ID>
+                </cac:TaxScheme>
+              </cac:PartyTaxScheme>
+              <cac:PartyLegalEntity>
+                <cbc:RegistrationName>PLATANUS</cbc:RegistrationName>
+              </cac:PartyLegalEntity>
+              <cac:Contact>
+                <cbc:ElectronicMail>kupac@firma.hr</cbc:ElectronicMail>
+              </cac:Contact>
+            </cac:Party>
+          </cac:AccountingCustomerParty>
+          <cac:PaymentMeans>
+            <cbc:PaymentMeansCode>48</cbc:PaymentMeansCode>
+            <cbc:PaymentID>TRANSAKCIJSKIM RAČUNOM</cbc:PaymentID>
+            <cac:PayeeFinancialAccount>
+              <cbc:ID>HR8324070001100029969</cbc:ID>
+            </cac:PayeeFinancialAccount>
+          </cac:PaymentMeans><cac:TaxTotal>
+          <cbc:TaxAmount currencyID="EUR">57.00</cbc:TaxAmount><cac:TaxSubtotal>
+            <cbc:TaxableAmount currencyID="EUR">228.00</cbc:TaxableAmount>
+            <cbc:TaxAmount currencyID="EUR">57.00</cbc:TaxAmount>
+            <cac:TaxCategory>
+              <cbc:ID>S</cbc:ID>
+              <cbc:Percent>25.00</cbc:Percent>
+              <cac:TaxScheme>
+                <cbc:ID>VAT</cbc:ID>
+              </cac:TaxScheme>
+            </cac:TaxCategory>
+          </cac:TaxSubtotal></cac:TaxTotal>
+          <cac:LegalMonetaryTotal>
+            <cbc:LineExtensionAmount currencyID="EUR">228.00</cbc:LineExtensionAmount>
+            <cbc:TaxExclusiveAmount currencyID="EUR">228.00</cbc:TaxExclusiveAmount>
+            <cbc:TaxInclusiveAmount currencyID="EUR">285.00</cbc:TaxInclusiveAmount>
+            <cbc:PayableAmount currencyID="EUR">285.00</cbc:PayableAmount>
+          </cac:LegalMonetaryTotal><cac:InvoiceLine>
+              <cbc:ID>1</cbc:ID>
+              <cbc:InvoicedQuantity unitCode="C62">9.00</cbc:InvoicedQuantity>
+              <cbc:LineExtensionAmount currencyID="EUR">108.00</cbc:LineExtensionAmount>
+              <cac:TaxTotal>
+                <cbc:TaxAmount currencyID="EUR">27.00</cbc:TaxAmount>
+                <cac:TaxSubtotal>
+                  <cbc:TaxableAmount currencyID="EUR">108.00</cbc:TaxableAmount>
+                  <cbc:TaxAmount currencyID="EUR">27.00</cbc:TaxAmount>
+                  <cac:TaxCategory>
+                    <cbc:ID>S</cbc:ID>
+                    <cbc:Percent>25.00</cbc:Percent>
+                    <cac:TaxScheme>
+                      <cbc:ID>VAT</cbc:ID>
+                    </cac:TaxScheme>
+                  </cac:TaxCategory>
+                </cac:TaxSubtotal>
+              </cac:TaxTotal>
+              <cac:Item>
+                <cbc:Description>Izmjena ulja</cbc:Description>
+                <cbc:Name>Izmjena ulja</cbc:Name>
+                <cac:SellersItemIdentification>
+            	  	<cbc:ID>815</cbc:ID>
+            	  </cac:SellersItemIdentification>
+                <cac:CommodityClassification>
+                  <cbc:ItemClassificationCode listID="CG">95.31.11</cbc:ItemClassificationCode>
+                </cac:CommodityClassification>
+                <cac:ClassifiedTaxCategory>
+                  <cbc:ID>S</cbc:ID>
+                  <cbc:Percent>25.00</cbc:Percent>
+                  <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                  </cac:TaxScheme>
+                </cac:ClassifiedTaxCategory>
+              </cac:Item>
+              <cac:Price>
+                <cbc:PriceAmount currencyID="EUR">108.00</cbc:PriceAmount>
+                <cbc:BaseQuantity unitCode="C62">9.00</cbc:BaseQuantity>
+              </cac:Price>
+            </cac:InvoiceLine><cac:InvoiceLine>
+              <cbc:ID>2</cbc:ID>
+              <cbc:InvoicedQuantity unitCode="C62">1.00</cbc:InvoicedQuantity>
+              <cbc:LineExtensionAmount currencyID="EUR">120.00</cbc:LineExtensionAmount>
+              <cac:TaxTotal>
+                <cbc:TaxAmount currencyID="EUR">30.00</cbc:TaxAmount>
+                <cac:TaxSubtotal>
+                  <cbc:TaxableAmount currencyID="EUR">120.00</cbc:TaxableAmount>
+                  <cbc:TaxAmount currencyID="EUR">30.00</cbc:TaxAmount>
+                  <cac:TaxCategory>
+                    <cbc:ID>S</cbc:ID>
+                    <cbc:Percent>25.00</cbc:Percent>
+                    <cac:TaxScheme>
+                      <cbc:ID>VAT</cbc:ID>
+                    </cac:TaxScheme>
+                  </cac:TaxCategory>
+                </cac:TaxSubtotal>
+              </cac:TaxTotal>
+              <cac:Item>
+                <cbc:Description>servis vozila</cbc:Description>
+                <cbc:Name>servis vozila</cbc:Name>
+                <cac:SellersItemIdentification>
+            	  	<cbc:ID>816</cbc:ID>
+            	  </cac:SellersItemIdentification>
+                <cac:CommodityClassification>
+                  <cbc:ItemClassificationCode listID="CG">95.31.11</cbc:ItemClassificationCode>
+                </cac:CommodityClassification>
+                <cac:ClassifiedTaxCategory>
+                  <cbc:ID>S</cbc:ID>
+                  <cbc:Percent>25.00</cbc:Percent>
+                  <cac:TaxScheme>
+                    <cbc:ID>VAT</cbc:ID>
+                  </cac:TaxScheme>
+                </cac:ClassifiedTaxCategory>
+              </cac:Item>
+              <cac:Price>
+                <cbc:PriceAmount currencyID="EUR">120.00</cbc:PriceAmount>
+                <cbc:BaseQuantity unitCode="C62">1.00</cbc:BaseQuantity>
+              </cac:Price>
+            </cac:InvoiceLine></Invoice>

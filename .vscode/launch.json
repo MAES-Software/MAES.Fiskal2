@@ -4,10 +4,19 @@
         {
             "name": "Tests",
             "type": "coreclr",
-            "program": "${workspaceFolder}/MAES.Fiskal2.Tests/bin/Debug/net10.0/MAES.Fiskal2.Tests.dll",
             "request": "launch",
-            "preLaunchTask": "Test",
-            "internalConsoleOptions": "neverOpen"
+            "program": "dotnet",
+            "args": [
+                "test",
+                "${workspaceFolder}/MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "SUPER_BUSINESS_GUID": "775bc5322ecf438884c7b20fa8a8a610",
+                "SUPER_USERNAME": "roko@maesdbk.hr",
+                "SUPER_PASSWORD": "Roko1234"
+            }
         },
         {
             "name": "Example",
