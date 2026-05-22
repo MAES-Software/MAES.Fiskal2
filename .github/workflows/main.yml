@@ -1,0 +1,83 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj
+
+      - name: Create certificate from secret
+        env:
+          CERT_P12_BASE64: ${{ secrets.CERT_P12 }}
+        run: |
+          if [ -n "$CERT_P12_BASE64" ]; then
+            echo "$CERT_P12_BASE64" | base64 -d > cert.p12
+            echo "Certificate created successfully at workspace root"
+          else
+            echo "CERT_P12 secret not set - tests will skip certificate-dependent tests"
+          fi
+
+      - name: Run tests
+        run: dotnet test MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj --configuration Release --no-restore
+
+  pack-and-publish:
+    name: Pack and publish package
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore MAES.Fiskal2/MAES.Fiskal2.csproj
+
+      - name: Build library
+        run: dotnet build MAES.Fiskal2/MAES.Fiskal2.csproj --configuration Release --no-restore
+
+      - name: Determine package version
+        id: version
+        run: |
+          VERSION_PREFIX=$(grep -oPm1 "(?<=<Version>)[^<]+" MAES.Fiskal2/MAES.Fiskal2.csproj)
+          PACKAGE_VERSION="${VERSION_PREFIX%.*}.${GITHUB_RUN_NUMBER}"
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> $GITHUB_ENV
+          echo "Pack version: $PACKAGE_VERSION"
+
+      - name: Pack library
+        # Use existing build outputs; avoid rebuilding here
+        run: dotnet pack MAES.Fiskal2/MAES.Fiskal2.csproj --configuration Release --output ./artifacts --no-restore --no-build /p:PackageVersion=${{ env.PACKAGE_VERSION }}
+
+      - name: Publish package to NuGet
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+        run: |
+          dotnet nuget push "./artifacts/*.nupkg" \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
