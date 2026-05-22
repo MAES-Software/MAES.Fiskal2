@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Tests",
+            "type": "coreclr",
+            "program": "${workspaceFolder}/MAES.Fiskal2.Tests/bin/Debug/net10.0/MAES.Fiskal2.Tests.dll",
+            "request": "launch",
+            "preLaunchTask": "Test",
+            "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "name": "Example",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Build Example",
+            "program": "${workspaceFolder}/MAES.Fiskal2.Example/bin/Debug/net10.0/MAES.Fiskal2.Example.exe",
+            "cwd": "${workspaceFolder}/MAES.Fiskal2.Example",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
+        }
+    ]
+}

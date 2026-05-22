@@ -4,7 +4,7 @@ namespace MAES.Fiskal2.Tests;
 
 public class SuperTests
 {
-    Super superProvider = new ()
+    Super super = new ()
     {
         BusinessGuid = Environment.GetEnvironmentVariable("SUPER_BUSINESS_GUID") ?? throw new InvalidOperationException("SUPER_BUSINESS_GUID environment variable is not set."),
         Username = Environment.GetEnvironmentVariable("SUPER_USERNAME") ?? throw new InvalidOperationException("SUPER_USERNAME environment variable is not set."),
@@ -13,9 +13,5 @@ public class SuperTests
     };
 
     [Fact]
-    public async Task SendInvoiceUBL()
-    {
-        // dohvati ubl iz datoteke
-        await superProvider.EvidentirajUBLAsync("");
-    }
+    public async Task SendInvoiceUBL() => await super.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
 }
