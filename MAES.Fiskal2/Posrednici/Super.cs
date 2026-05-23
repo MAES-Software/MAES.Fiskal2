@@ -130,7 +130,7 @@ public class Super : IPosrednik
                 $"{x.GetProperty("SupplierAddress").GetString()}, " +
                 $"{x.GetProperty("SupplierZip").GetString()} " +
                 $"{x.GetProperty("SupplierCity").GetString()}",
-            Guid = x.GetProperty("Guid").GetGuid(),
+            Id = x.GetProperty("Guid").GetGuid().ToString(),
             Status = UlazniERacunStatus.Zaprimljeno // treba popravit
         });
     }

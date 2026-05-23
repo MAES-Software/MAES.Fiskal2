@@ -32,20 +32,108 @@ public class EPoslovanje : IPosrednik
     /// </summary>
     public string Password { get; set; } = "";
 
-    /// <summary>
-    /// Dohvaća XML/UBL sadržaj ulaznog računa. Nije implementirano.
-    /// </summary>
-    public Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+    HttpClient createClient()
+    {
+        var client = new HttpClient
+        {
+            BaseAddress = new Uri(IsDev ? URI_DEV : URI)
+        };
+
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        return client;
+    }
+
+    async Task<string> apiKey()
+    {
+        using var client = createClient();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/account/apikey");
+        request.Content = new StringContent(JsonSerializer.Serialize(new
+        {
+            username = Username,
+            password = Password,
+            vatId = OIB,
+            softwareId = "MAES.Blagajna"
+        }), Encoding.UTF8, "application/json");
+
+        var response = await client.SendAsync(request);
+        var json = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new HttpRequestException(json);
+
+        using var doc = JsonDocument.Parse(json);
+        return doc.RootElement.GetProperty("apiKey").GetString()!;
+    }
+
+    async Task<HttpClient> authClient()
+    {
+        var client = createClient();
+        var key = await apiKey();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key);
+
+        return client;
+    }
+
+    async Task<JsonDocument> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
+    {
+        using var client = await authClient();
+
+        var req = new HttpRequestMessage(method, url);
+        if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+        var res = await client.SendAsync(req, token);
+        var json = await res.Content.ReadAsStringAsync();
+
+        if (!res.IsSuccessStatusCode)
+            throw new HttpRequestException(json);
+
+        var doc = JsonDocument.Parse(json);
+
+        if (doc.RootElement.TryGetProperty("errorMessage", out var err) &&
+            !string.IsNullOrWhiteSpace(err.GetString()))
+            throw new Exception(err.GetString());
+
+        return doc;
+    }
 
     /// <summary>
-    /// Dohvaća PDF sadržaj ulaznog računa. Nije implementirano.
+    /// Dohvaća XML/UBL sadržaj ulaznog računa.
     /// </summary>
-    public Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+    public async Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => 
+        (await sendRequest(HttpMethod.Get, $"/api/v2/document/get/{id}", null, token)).RootElement.GetProperty("document").GetString()!;
 
     /// <summary>
-    /// Dohvaća popis ulaznih e-računa. Nije implementirano.
+    /// Dohvaća PDF sadržaj ulaznog računa.
     /// </summary>
-    public Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) => throw new NotImplementedException();
+    public async Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) =>
+        Convert.FromBase64String((await sendRequest(HttpMethod.Get, $"/api/v2/document/visualization/{id}", null, token)).RootElement.GetProperty("pdf").GetString()!);
+
+    /// <summary>
+    /// Dohvaća popis ulaznih e-računa.
+    /// </summary>
+    public async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
+    {
+        var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/incoming?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+        
+        var list = new List<UlazniERacun>();
+
+        foreach (var item in doc.RootElement.EnumerateArray())
+        {
+            list.Add(new UlazniERacun
+            {
+                Id = item.GetProperty("id").GetInt64().ToString(),
+                Datum = item.GetProperty("issuedOn").GetDateTime(),
+                Broj = item.GetProperty("documentId").GetString()!,
+                Status = UlazniERacunStatus.Zaprimljeno, // TODO: ovo treba popravit
+                Partner = item.GetProperty("customerPartyName").GetString()!,
+                PartnerOIB = item.GetProperty("customerPartyVATId").GetString()!
+            });
+        }
+
+        return list;
+    }
 
     /// <summary>
     /// Dohvaća XML/UBL sadržaj izlaznog računa. Nije implementirano.
@@ -65,31 +153,11 @@ public class EPoslovanje : IPosrednik
     /// <summary>
     /// Evidentira UBL dokument u ePoslovanje sustav.
     /// </summary>
-    public async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)
+    public async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default) => await sendRequest(HttpMethod.Post, "/api/v2/document/send", new
     {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri(IsDev ? URI_DEV : URI);
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        var key = await apiKey(client);
-
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(key);
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/document/send");
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Content = new StringContent(JsonSerializer.Serialize(new Dictionary<string, object>
-        {
-            ["document"]   = ubl,
-            ["softwareId"] = "MAES.Blagajna"
-        }), Encoding.UTF8, "application/json");
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"ePoslovanje send document error: {json}");
-
-        // TODO: Ovo treba popravit, dohvatit id od eposlovanja
-    }
+        document = ubl,
+        softwareId = "MAES.Blagajna"
+    }, token);
 
     /// <summary>
     /// Evidentira uplatu za račun. Nije implementirano.
@@ -101,24 +169,5 @@ public class EPoslovanje : IPosrednik
     /// </summary>
     public Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) => throw new NotImplementedException();
 
-    async Task<string> apiKey(HttpClient client)
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "api/v2/account/apikey");
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Content = new StringContent(JsonSerializer.Serialize(new Dictionary<string, string>
-        {
-            ["username"]   = Username,
-            ["password"]   = Password,
-            ["vatId"]      = OIB,
-            ["softwareId"] = "MAES.Blagajna"
-        }), Encoding.UTF8, "application/json");
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"{json}");
-
-        using var doc = JsonDocument.Parse(json);
-        return doc.RootElement.GetProperty("apiKey").GetString()!;
-    }
+    
 }
