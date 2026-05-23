@@ -67,18 +67,10 @@ public class EPoslovanje : IPosrednik
         return doc.RootElement.GetProperty("apiKey").GetString()!;
     }
 
-    async Task<HttpClient> authClient()
-    {
-        var client = createClient();
-        var key = await apiKey();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key);
-
-        return client;
-    }
-
     async Task<JsonDocument> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
     {
-        using var client = await authClient();
+        using var client = createClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await apiKey());
 
         var req = new HttpRequestMessage(method, url);
         if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
@@ -86,16 +78,23 @@ public class EPoslovanje : IPosrednik
         var res = await client.SendAsync(req, token);
         var json = await res.Content.ReadAsStringAsync();
 
-        if (!res.IsSuccessStatusCode)
-            throw new HttpRequestException(json);
+        if (!res.IsSuccessStatusCode) throw new HttpRequestException(json);
+        
+        return JsonDocument.Parse(json);
+    }
 
-        var doc = JsonDocument.Parse(json);
+    async Task changeStatusAsync(string id, int status, string? note = null, double? partialPaymentAmount = null, CancellationToken token = default)
+    {
+        var body = new Dictionary<string, object?>
+        {
+            ["status"] = status,
+            ["changedOn"] = DateTimeOffset.Now.ToString("O")
+        };
 
-        if (doc.RootElement.TryGetProperty("errorMessage", out var err) &&
-            !string.IsNullOrWhiteSpace(err.GetString()))
-            throw new Exception(err.GetString());
+        if (!string.IsNullOrWhiteSpace(note)) body["note"] = note;
+        if (partialPaymentAmount.HasValue) body["partialPaymentAmount"] = partialPaymentAmount.Value;
 
-        return doc;
+        await sendRequest(HttpMethod.Post, $"/api/v2/document/changestatus/{id}", body, token);
     }
 
     /// <summary>
@@ -136,14 +135,16 @@ public class EPoslovanje : IPosrednik
     }
 
     /// <summary>
-    /// Dohvaća XML/UBL sadržaj izlaznog računa. Nije implementirano.
+    /// Dohvaća XML/UBL sadržaj izlaznog računa.
     /// </summary>
-    public Task<string> IzlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+    public Task<string> IzlazniUBLAsync(string id, CancellationToken token = default)
+        => UlazniUBLAsync(id, token);
 
     /// <summary>
-    /// Dohvaća PDF sadržaj izlaznog računa. Nije implementirano.
+    /// Dohvaća PDF sadržaj izlaznog računa.
     /// </summary>
-    public Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+    public Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default)
+        => UlazniPdfAsync(id, token);
 
     /// <summary>
     /// Dohvaća popis izlaznih e-računa. Nije implementirano.
@@ -160,14 +161,17 @@ public class EPoslovanje : IPosrednik
     }, token);
 
     /// <summary>
-    /// Evidentira uplatu za račun. Nije implementirano.
+    /// Evidentira uplatu za račun.
     /// </summary>
-    public Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default) => throw new NotImplementedException();
+    public Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default)
+    {
+        var status = amount > 0 ? 8 : 7; // 8: partialno, 7: potpuno
+        return changeStatusAsync(id, status, partialPaymentAmount: status == 8 ? amount : null, token: token);
+    }
 
     /// <summary>
-    /// Odbija račun. Nije implementirano.
+    /// Odbija račun.
     /// </summary>
-    public Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) => throw new NotImplementedException();
-
-    
+    public Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) =>
+        changeStatusAsync(id, status: 6, $"{razlog}: {opis}", token: token);
 }
