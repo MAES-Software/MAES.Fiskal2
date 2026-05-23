@@ -1,5 +1,11 @@
 # MAES.Fiskal2
 
+[![CI/CD](https://github.com/MAES-Software/MAES.Fiskal2/actions/workflows/main.yml/badge.svg)](https://github.com/MAES-Software/MAES.Fiskal2/actions/workflows/main.yml)
+[![Contributors](https://img.shields.io/github/contributors/MAES-Software/MAES.Fiskal2)](https://github.com/MAES-Software/MAES.Fiskal2/graphs/contributors)
+[![Issues](https://img.shields.io/github/issues/MAES-Software/MAES.Fiskal2)](https://github.com/MAES-Software/MAES.Fiskal2/issues)
+[![NuGet](https://img.shields.io/nuget/v/MAES.Fiskal2.svg)](https://www.nuget.org/packages/MAES.Fiskal2/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/MAES.Fiskal2)](https://www.nuget.org/packages/MAES.Fiskal2/)
+
 MAES.Fiskal2 je C# biblioteka za rad s Hrvatskim fiskalnim posrednicima. Cilj projekta je izraditi zajednički sloj za sve posrednike koji podržavaju razmjenu ulaznih i izlaznih e-računa u C#.
 
 ## Što projekt radi
@@ -18,19 +24,15 @@ Modeli `UlazniERacun` i `IzlazniERacun` predstavljaju minimalne informacije o ra
 
 U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
-| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `bizBox` | `Editel` |
-|---|:---:|:---:|:---:|:---:|:---:|
-| Dohvat ulaznih e-računa | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Dohvat izlaznih e-računa | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Dohvat UBL sadržaja | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Dohvat PDF sadržaja | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Evidentiranje UBL dokumenta | ✅ | ✅* | ❌ | ❌ | ❌ |
-| Evidentiranje uplate | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Odbijanje računa | ✅ | ❌ | ❌ | ❌ | ❌ |
-
-## Zahtjevi
-
-- .NET Standard 2.0
+| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` |
+|---|:---:|:---:|:---:|
+| Dohvat ulaznih e-računa | ✅ | ✅ | ❌ |
+| Dohvat izlaznih e-računa | ✅ | ✅ | ❌ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ❌ |
+| Evidentiranje uplate | ✅ | ✅ | ❌ |
+| Odbijanje računa | ✅ | ✅ | ❌ |
 
 ## Instalacija
 
@@ -48,9 +50,9 @@ Ili direktno u datoteku `.csproj`:
 </ItemGroup>
 ```
 
-## Kako koristiti
+## Inicijalizacija posrednika
 
-Primjer inicijalizacije posrednika:
+### Primjer inicijalizacije Super.hr posrednika:
 
 ```csharp
 using MAES.Fiskal2.Posrednici;
@@ -62,51 +64,65 @@ var posrednik = new Super
     Username = "...",
     Password = "..."
 };
+```
 
-var racuni = await posrednik.UlazniListAsync(DateTime.Today.AddDays(-7), DateTime.Today);
+### Primjer inicijalizacije eposlovanje.hr posrednika:
+
+```csharp
+using MAES.Fiskal2.Posrednici;
+
+var posrednik = new EPoslovanje
+{
+    IsDev = true,
+    OIB = "...",
+    Username = "...",
+    Password = "..."
+};
 ```
 
 ## Dostupne metode
 
+> Svaka metoda ima na kraju CancellationToken kojeg je poželjno postaviti, ali se može izostaviti
+
 Sučelje `IPosrednik` nudi sljedeće metode:
 
 ### Dohvat ulaznih e-računa
-- `Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)`
+- `Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to)`
     
     Dohvaća popis ulaznih računa u vremenskom rasponu
 
-- `Task<string> UlazniUBLAsync(string id, CancellationToken token = default)`
+- `Task<string> UlazniUBLAsync(string id)`
     
     Dohvaća XML/UBL sadržaj ulaznog računa
 
-- `Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default)`
+- `Task<byte[]> UlazniPdfAsync(string id)`
 
     Dohvaća PDF sadržaj ulaznog računa
 
 ### Dohvat izlaznih e-računa
-- `Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)`
+- `Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to)`
 
     Dohvaća popis izlaznih računa u vremenskom rasponu
 
-- `Task<string> IzlazniUBLAsync(string id, CancellationToken token = default)`
+- `Task<string> IzlazniUBLAsync(string id)`
 
     Dohvaća XML/UBL sadržaj izlaznog računa
 
-- `Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default)`
+- `Task<byte[]> IzlazniPdfAsync(string id)`
 
     Dohvaća PDF sadržaj izlaznog računa
 
 
 ### Operacije na računima
-- `Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)`
+- `Task EvidentirajUBLAsync(string ubl)`
 
     Evidentira UBL dokument
     
-- `Task EvidentirajUplatuAsync(string id, CancellationToken token = default)`
+- `Task EvidentirajUplatuAsync(string id)`
 
     Evidentira uplatu za račun
 
-- `Task OdbijRacunAsync(string id, CancellationToken token = default)`
+- `Task OdbijRacunAsync(string id)`
 
     Odbija račun
 
@@ -129,7 +145,3 @@ dotnet pack MAES.Fiskal2.csproj --configuration Release
 - Projekt je u razvoju.
 - Neke metode još nisu implementirane.
 - Trenutna sučelja i model podataka mogu se mijenjati dok se dovršava podrška za različite posrednike.
-
-## Licenca
-
-Ovaj projekt je licenciran pod MIT licencom. Vidjeti [LICENSE](LICENSE) datoteku za više detalja.

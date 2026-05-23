@@ -32,93 +32,169 @@ public class EPoslovanje : IPosrednik
     /// </summary>
     public string Password { get; set; } = "";
 
-    /// <summary>
-    /// Dohvaća XML/UBL sadržaj ulaznog računa. Nije implementirano.
-    /// </summary>
-    public Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Dohvaća PDF sadržaj ulaznog računa. Nije implementirano.
-    /// </summary>
-    public Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Dohvaća popis ulaznih e-računa. Nije implementirano.
-    /// </summary>
-    public Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Dohvaća XML/UBL sadržaj izlaznog računa. Nije implementirano.
-    /// </summary>
-    public Task<string> IzlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Dohvaća PDF sadržaj izlaznog računa. Nije implementirano.
-    /// </summary>
-    public Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Dohvaća popis izlaznih e-računa. Nije implementirano.
-    /// </summary>
-    public Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Evidentira UBL dokument u ePoslovanje sustav.
-    /// </summary>
-    public async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)
+    HttpClient createClient()
     {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri(IsDev ? URI_DEV : URI);
+        var client = new HttpClient
+        {
+            BaseAddress = new Uri(IsDev ? URI_DEV : URI)
+        };
+
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-        var key = await apiKey(client);
-
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(key);
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/document/send");
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Content = new StringContent(JsonSerializer.Serialize(new Dictionary<string, object>
-        {
-            ["document"]   = ubl,
-            ["softwareId"] = "MAES.Blagajna"
-        }), Encoding.UTF8, "application/json");
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"ePoslovanje send document error: {json}");
-
-        // TODO: Ovo treba popravit, dohvatit id od eposlovanja
+        return client;
     }
 
-    /// <summary>
-    /// Evidentira uplatu za račun. Nije implementirano.
-    /// </summary>
-    public Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Odbija račun. Nije implementirano.
-    /// </summary>
-    public Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) => throw new NotImplementedException();
-
-    async Task<string> apiKey(HttpClient client)
+    async Task<string> apiKey()
     {
-        using var request = new HttpRequestMessage(HttpMethod.Post, "api/v2/account/apikey");
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Content = new StringContent(JsonSerializer.Serialize(new Dictionary<string, string>
+        using var client = createClient();
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/account/apikey");
+        request.Content = new StringContent(JsonSerializer.Serialize(new
         {
-            ["username"]   = Username,
-            ["password"]   = Password,
-            ["vatId"]      = OIB,
-            ["softwareId"] = "MAES.Blagajna"
+            username = Username,
+            password = Password,
+            vatId = OIB,
+            softwareId = "MAES.Fiskal2"
         }), Encoding.UTF8, "application/json");
 
         var response = await client.SendAsync(request);
         var json = await response.Content.ReadAsStringAsync();
 
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"{json}");
+        if (!response.IsSuccessStatusCode)
+            throw new HttpRequestException(json);
 
         using var doc = JsonDocument.Parse(json);
         return doc.RootElement.GetProperty("apiKey").GetString()!;
     }
+
+    async Task<JsonDocument> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
+    {
+        using var client = createClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await apiKey());
+
+        var req = new HttpRequestMessage(method, url);
+        if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+        var res = await client.SendAsync(req, token);
+        var json = await res.Content.ReadAsStringAsync();
+
+        if (!res.IsSuccessStatusCode) throw new HttpRequestException(json);
+        
+        return JsonDocument.Parse(json);
+    }
+
+    async Task changeStatusAsync(string id, int status, string? note = null, double? partialPaymentAmount = null, CancellationToken token = default)
+    {
+        var body = new Dictionary<string, object?>
+        {
+            ["status"] = status,
+            ["changedOn"] = DateTimeOffset.Now.ToString("O")
+        };
+
+        if (!string.IsNullOrWhiteSpace(note)) body["note"] = note;
+        if (partialPaymentAmount.HasValue) body["partialPaymentAmount"] = partialPaymentAmount.Value;
+
+        await sendRequest(HttpMethod.Post, $"/api/v2/document/changestatus/{id}", body, token);
+    }
+
+    /// <summary>
+    /// Dohvaća XML/UBL sadržaj ulaznog računa.
+    /// </summary>
+    public async Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => 
+        (await sendRequest(HttpMethod.Get, $"/api/v2/document/get/{id}", null, token)).RootElement.GetProperty("document").GetString()!;
+
+    /// <summary>
+    /// Dohvaća PDF sadržaj ulaznog računa.
+    /// </summary>
+    public async Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) =>
+        Convert.FromBase64String((await sendRequest(HttpMethod.Get, $"/api/v2/document/visualization/{id}", null, token)).RootElement.GetProperty("pdf").GetString()!);
+
+    /// <summary>
+    /// Dohvaća popis ulaznih e-računa.
+    /// </summary>
+    public async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
+    {
+        var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/incoming?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+        
+        var list = new List<UlazniERacun>();
+
+        foreach (var item in doc.RootElement.EnumerateArray())
+        {
+            list.Add(new UlazniERacun
+            {
+                Id = item.GetProperty("id").GetInt64().ToString(),
+                Datum = item.GetProperty("issuedOn").GetDateTime(),
+                Broj = item.GetProperty("documentId").GetString()!,
+                Status = UlazniERacunStatus.Zaprimljeno, // TODO: ovo treba popravit
+                Partner = item.GetProperty("customerPartyName").GetString()!,
+                PartnerOIB = item.GetProperty("customerPartyVATId").GetString()!
+            });
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// Dohvaća XML/UBL sadržaj izlaznog računa.
+    /// </summary>
+    public Task<string> IzlazniUBLAsync(string id, CancellationToken token = default)
+        => UlazniUBLAsync(id, token);
+
+    /// <summary>
+    /// Dohvaća PDF sadržaj izlaznog računa.
+    /// </summary>
+    public Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default)
+        => UlazniPdfAsync(id, token);
+
+    /// <summary>
+    /// Dohvaća popis izlaznih e-računa.
+    /// </summary>
+    public async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(
+    DateTime from,
+    DateTime to,
+    CancellationToken token = default)
+    {
+        var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/outgoing?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+
+        var list = new List<IzlazniERacun>();
+
+        foreach (var item in doc.RootElement.EnumerateArray())
+        {
+            list.Add(new IzlazniERacun
+            {
+                Id = item.GetProperty("id").GetInt64().ToString(),
+                Broj = item.GetProperty("documentId").GetString()!,
+                Datum = item.GetProperty("issuedOn").GetDateTime(),
+                PartnerNaziv = item.GetProperty("customerPartyName").GetString()!,
+                PartnerOIB = item.GetProperty("customerPartyVATId").GetString()!,
+                Status = IzlazniERacunStatus.Poslano // TODO: ovo treba popravit
+            });
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// Evidentira UBL dokument u ePoslovanje sustav.
+    /// </summary>
+    public async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default) => await sendRequest(HttpMethod.Post, "/api/v2/document/send", new
+    {
+        document = ubl,
+        softwareId = "MAES.Blagajna"
+    }, token);
+
+    /// <summary>
+    /// Evidentira uplatu za račun.
+    /// </summary>
+    public Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default)
+    {
+        var status = amount > 0 ? 8 : 7; // 8: partialno, 7: potpuno
+        return changeStatusAsync(id, status, partialPaymentAmount: status == 8 ? amount : null, token: token);
+    }
+
+    /// <summary>
+    /// Odbija račun.
+    /// </summary>
+    public Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) =>
+        changeStatusAsync(id, status: 6, $"{razlog}: {opis}", token: token);
 }

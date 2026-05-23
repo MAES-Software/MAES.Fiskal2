@@ -9,6 +9,7 @@ namespace MAES.Fiskal2;
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
 [JsonDerivedType(typeof(Super), "Super")]
 [JsonDerivedType(typeof(EPoslovanje), "EPoslovanje")]
+[JsonDerivedType(typeof(Fina), "Fina")]
 public interface IPosrednik
 {
     /// <summary>
