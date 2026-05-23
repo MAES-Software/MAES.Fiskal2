@@ -1,5 +1,11 @@
 # MAES.Fiskal2
 
+[![CI/CD](https://github.com/MAES-Software/MAES.Fiskal2/actions/workflows/main.yml/badge.svg)](https://github.com/MAES-Software/MAES.Fiskal2/actions/workflows/main.yml)
+[![Contributors](https://img.shields.io/github/contributors/MAES-Software/MAES.Fiskal2)](https://github.com/MAES-Software/MAES.Fiskal2/graphs/contributors)
+[![Issues](https://img.shields.io/github/issues/MAES-Software/MAES.Fiskal2)](https://github.com/MAES-Software/MAES.Fiskal2/issues)
+[![NuGet](https://img.shields.io/nuget/v/MAES.Fiskal2.svg)](https://www.nuget.org/packages/MAES.Fiskal2/)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/MAES.Fiskal2)](https://www.nuget.org/packages/MAES.Fiskal2/)
+
 MAES.Fiskal2 je C# biblioteka za rad s Hrvatskim fiskalnim posrednicima. Cilj projekta je izraditi zajednički sloj za sve posrednike koji podržavaju razmjenu ulaznih i izlaznih e-računa u C#.
 
 ## Što projekt radi
@@ -19,7 +25,7 @@ Modeli `UlazniERacun` i `IzlazniERacun` predstavljaju minimalne informacije o ra
 U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
 | Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` |
-|---|:---:|:---:|:---:|:---:|:---:|
+|---|:---:|:---:|:---:|
 | Dohvat ulaznih e-računa | ✅ | ✅ | ❌ |
 | Dohvat izlaznih e-računa | ✅ | ✅ | ❌ |
 | Dohvat UBL sadržaja | ✅ | ✅ | ❌ |
