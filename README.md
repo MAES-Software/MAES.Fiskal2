@@ -20,13 +20,13 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
 | Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` |
 |---|:---:|:---:|:---:|:---:|:---:|
-| Dohvat ulaznih e-računa | ✅ | ❌ | ❌ |
-| Dohvat izlaznih e-računa | ✅ | ❌ | ❌ |
-| Dohvat UBL sadržaja | ✅ | ❌ | ❌ |
-| Dohvat PDF sadržaja | ✅ | ❌ | ❌ |
+| Dohvat ulaznih e-računa | ✅ | ✅ | ❌ |
+| Dohvat izlaznih e-računa | ✅ | ✅ | ❌ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌ |
 | Evidentiranje UBL dokumenta | ✅ | ✅ | ❌ |
-| Evidentiranje uplate | ✅ | ❌ | ❌ |
-| Odbijanje računa | ✅ | ❌ | ❌ |
+| Evidentiranje uplate | ✅ | ✅ | ❌ |
+| Odbijanje računa | ✅ | ✅ | ❌ |
 
 ## Instalacija
 
@@ -68,7 +68,7 @@ using MAES.Fiskal2.Posrednici;
 var posrednik = new EPoslovanje
 {
     IsDev = true,
-    BusinessGuid = "...",
+    OIB = "...",
     Username = "...",
     Password = "..."
 };
