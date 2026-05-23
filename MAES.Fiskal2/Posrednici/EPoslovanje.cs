@@ -54,7 +54,7 @@ public class EPoslovanje : IPosrednik
             username = Username,
             password = Password,
             vatId = OIB,
-            softwareId = "MAES.Blagajna"
+            softwareId = "MAES.Fiskal2"
         }), Encoding.UTF8, "application/json");
 
         var response = await client.SendAsync(request);
@@ -147,9 +147,32 @@ public class EPoslovanje : IPosrednik
         => UlazniPdfAsync(id, token);
 
     /// <summary>
-    /// Dohvaća popis izlaznih e-računa. Nije implementirano.
+    /// Dohvaća popis izlaznih e-računa.
     /// </summary>
-    public Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) => throw new NotImplementedException();
+    public async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(
+    DateTime from,
+    DateTime to,
+    CancellationToken token = default)
+    {
+        var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/outgoing?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+
+        var list = new List<IzlazniERacun>();
+
+        foreach (var item in doc.RootElement.EnumerateArray())
+        {
+            list.Add(new IzlazniERacun
+            {
+                Id = item.GetProperty("id").GetInt64().ToString(),
+                Broj = item.GetProperty("documentId").GetString()!,
+                Datum = item.GetProperty("issuedOn").GetDateTime(),
+                PartnerNaziv = item.GetProperty("customerPartyName").GetString()!,
+                PartnerOIB = item.GetProperty("customerPartyVATId").GetString()!,
+                Status = IzlazniERacunStatus.Poslano // TODO: ovo treba popravit
+            });
+        }
+
+        return list;
+    }
 
     /// <summary>
     /// Evidentira UBL dokument u ePoslovanje sustav.

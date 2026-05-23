@@ -8,7 +8,7 @@ public class IzlazniERacun
     /// <summary>
     /// Jedinstveni identifikator računa u sustavu posrednika.
     /// </summary>
-    public Guid Guid { get; set; }
+    public string Id { get; set; } = "";
 
     /// <summary>
     /// Redni broj računa.
