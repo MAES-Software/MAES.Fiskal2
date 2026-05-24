@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-
+#pragma warning disable 1591
 
 [System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Tools.ServiceModel.Svcutil", "8.0.0")]
 [System.ServiceModel.ServiceContractAttribute(Namespace="http://fina.hr/eracun/b2b/ws/pki/v0.1", ConfigurationName="eRacunB2BPortType")]

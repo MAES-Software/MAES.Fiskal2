@@ -1,3 +1,6 @@
+using System.Text;
+using System.Xml.Linq;
+
 namespace MAES.Fiskal2.Posrednici;
 
 /// <summary>
@@ -5,16 +8,72 @@ namespace MAES.Fiskal2.Posrednici;
 /// </summary>
 public class Fina : IPosrednik
 {
+
+#region Parametri posrednika
+
+    const string URI = "https://eracun.eposlovanje.hr";
+    const string URI_DEV = "https://test.eposlovanje.hr";
+
+    /// <summary>
+    /// Označava je li povezivanje na razvojni (test) API endpoint.
+    /// </summary>
+    public bool IsDev { get; set; }
+
+    /// <summary>
+    /// OIB poslovnog subjekta.
+    /// </summary>
+    public string OIB { get; set; } = "";
+
+#endregion
+
     /// <summary>
     /// Evidentira i šalje UBL/XML dokument prema FINA e-Račun sustavu.
     /// </summary>
     /// <param name="ubl">UBL/XML sadržaj dokumenta.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>Asinkrona operacija slanja dokumenta.</returns>
-    public Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)
+    public async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        var xml = XDocument.Parse(ubl);
+
+        // TODO: izvuci iz svog UBL modela ili configa
+        var supplierInvoiceId = GetInvoiceId(xml);
+        var buyerId = GetBuyerId(xml);
+
+        var msg = new SendB2BOutgoingInvoiceMsg
+        {
+            HeaderSupplier = new HeaderSupplierType
+            {
+                MessageID = Guid.NewGuid().ToString("N"),
+                SupplierID = OIB,
+                ERPID = "MAES.Fiskal2",
+                MessageType = "1"
+            },
+
+            Data = new SendB2BOutgoingInvoiceMsgData
+            {
+                B2BOutgoingInvoiceEnvelope = new ()
+                {
+                    XMLStandard = SendB2BOutgoingInvoiceMsgDataB2BOutgoingInvoiceEnvelopeXMLStandard.UBL,
+                    SpecificationIdentifier = SendB2BOutgoingInvoiceMsgDataB2BOutgoingInvoiceEnvelopeSpecificationIdentifier.urnceneuen169312017complianturnmfingovhrcius202510conformanturnmfingovhrext202510,
+                    SupplierInvoiceID = supplierInvoiceId,
+                    BuyerID = buyerId,
+                    AdditionalBuyerID = null,
+                    Item = Encoding.UTF8.GetBytes(ubl),
+                    ItemElementName = ItemChoiceType.InvoiceEnvelope
+                }
+            }
+        };
+
+        using var client = new eRacunB2BPortTypeClient(eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, IsDev ? URI_DEV : URI);
+
+        var res = await client.sendB2BOutgoingInvoiceAsync(msg);
+
+        if (res.SendB2BOutgoingInvoiceAckMsg.MessageAck.AckStatus != AckStatusType.ACCEPTED)
+            throw new Exception(res.SendB2BOutgoingInvoiceAckMsg.MessageAck.AckStatusText);
     }
+
+
 
     /// <summary>
     /// Evidentira uplatu za dokument unutar FINA sustava.
@@ -109,5 +168,31 @@ public class Fina : IPosrednik
     public Task<string> UlazniUBLAsync(string id, CancellationToken token = default)
     {
         throw new NotImplementedException();
+    }
+
+    static string GetInvoiceId(XDocument xml)
+    {
+        XNamespace cbc =
+            "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
+
+        return xml.Root?
+                   .Element(cbc + "ID")?
+                   .Value
+               ?? throw new InvalidOperationException("UBL nema Invoice ID.");
+    }
+
+    static string GetBuyerId(XDocument xml)
+    {
+        XNamespace cac =
+            "urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2";
+        XNamespace cbc =
+            "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2";
+
+        return xml.Root?
+                   .Element(cac + "AccountingCustomerParty")?
+                   .Descendants(cbc + "CompanyID")
+                   .FirstOrDefault()?
+                   .Value
+               ?? throw new InvalidOperationException("UBL nema BuyerID.");
     }
 }

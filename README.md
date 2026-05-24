@@ -30,7 +30,7 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije
 | Dohvat izlaznih e-računa | ✅ | ✅ | ❌ |
 | Dohvat UBL sadržaja | ✅ | ✅ | ❌ |
 | Dohvat PDF sadržaja | ✅ | ✅ | ❌ |
-| Evidentiranje UBL dokumenta | ✅ | ✅ | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ✅ |
 | Evidentiranje uplate | ✅ | ✅ | ❌ |
 | Odbijanje računa | ✅ | ✅ | ❌ |
 
