@@ -84,9 +84,32 @@ public class Fina : IPosrednik
     /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>Asinkrona operacija evidentiranja uplate.</returns>
-    public Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default)
+    public async Task EvidentirajUplatuAsync(
+        string id,
+        DateTime date,
+        double amount,
+        NacinPlacanja paymentMethod,
+        CancellationToken token = default)
     {
-        throw new NotImplementedException();
+        var msg = new SendB2BOutgoingInvoiceReportingMsg
+        {
+            HeaderSupplier = Header(),
+            Data = new()
+            {
+                 B2BOutgoingInvoiceEnvelope = new()
+                {
+                    SupplierInvoiceID = id,
+                    //TODO: wtf je ovo
+                }
+            }
+        };
+
+        using var client = CreateClient();
+
+        var res = await client.sendB2BOutgoingInvoiceReportingAsync(msg);
+
+        if (res.SendB2BOutgoingInvoiceReportingAckMsg.MessageAck.AckStatus != AckStatusType.ACCEPTED)
+            throw new Exception(res.SendB2BOutgoingInvoiceReportingAckMsg.MessageAck.AckStatusText);
     }
 
     /// <summary>
@@ -96,10 +119,8 @@ public class Fina : IPosrednik
     /// <param name="to">Završni datum pretrage.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>Popis izlaznih e-računa.</returns>
-    public Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) =>
+        throw new NotSupportedException("Lista izlaznih računa nije dostupna u FINA posredniku");
 
     /// <summary>
     /// Dohvaća PDF vizualizaciju izlaznog dokumenta.
@@ -143,10 +164,8 @@ public class Fina : IPosrednik
     /// <param name="to">Završni datum pretrage.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>Popis ulaznih e-računa.</returns>
-    public Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) =>
+        throw new NotSupportedException("Lista ulaznih računa nije dostupna u FINA posredniku");
 
     /// <summary>
     /// Dohvaća PDF vizualizaciju ulaznog dokumenta.
@@ -154,10 +173,8 @@ public class Fina : IPosrednik
     /// <param name="id">ID dokumenta.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>PDF dokument kao byte array.</returns>
-    public Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) =>
+        throw new NotSupportedException("PDF ulaznih računa nije dostupan u FINA posredniku");
 
     /// <summary>
     /// Dohvaća UBL/XML sadržaj ulaznog dokumenta.
@@ -165,10 +182,8 @@ public class Fina : IPosrednik
     /// <param name="id">ID dokumenta.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>UBL/XML sadržaj dokumenta.</returns>
-    public Task<string> UlazniUBLAsync(string id, CancellationToken token = default)
-    {
-        throw new NotImplementedException();
-    }
+    public Task<string> UlazniUBLAsync(string id, CancellationToken token = default) =>
+        throw new NotSupportedException("UBL ulaznih računa nije dostupan u FINA posredniku");
 
     static string GetInvoiceId(XDocument xml)
     {
@@ -195,4 +210,13 @@ public class Fina : IPosrednik
                    .Value
                ?? throw new InvalidOperationException("UBL nema BuyerID.");
     }
+
+     eRacunB2BPortTypeClient CreateClient() => new (eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, IsDev ? URI_DEV : URI);
+
+    HeaderSupplierType Header() => new()
+    {
+        MessageID = Guid.NewGuid().ToString(),
+        ERPID = "MAES.Fiskal2",
+        SupplierID = OIB
+    };
 }
