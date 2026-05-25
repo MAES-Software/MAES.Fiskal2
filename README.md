@@ -26,13 +26,15 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
 | Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` |
 |---|:---:|:---:|:---:|
-| Dohvat ulaznih e-računa | ✅ | ✅ | ❌ |
-| Dohvat izlaznih e-računa | ✅ | ✅ | ❌ |
-| Dohvat UBL sadržaja | ✅ | ✅ | ❌ |
-| Dohvat PDF sadržaja | ✅ | ✅ | ❌ |
+| Dohvat ulaznih e-računa | ✅ | ✅ | ❌* |
+| Dohvat izlaznih e-računa | ✅ | ✅ | ❌* |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌* |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌* |
 | Evidentiranje UBL dokumenta | ✅ | ✅ | ✅ |
-| Evidentiranje uplate | ✅ | ✅ | ❌ |
-| Odbijanje računa | ✅ | ✅ | ❌ |
+| Evidentiranje uplate | ✅ | ✅ | ❌* |
+| Odbijanje računa | ✅ | ✅ | ❌* |
+
+\* Fina nema pola ovih api callova ili su na nekom drugom endpointu treba vidit
 
 ## Instalacija
 
@@ -79,6 +81,39 @@ var posrednik = new EPoslovanje
     Password = "..."
 };
 ```
+
+### Primjer inicijalizacije Fina posrednika:
+
+```csharp
+using MAES.Fiskal2.Posrednici;
+
+var posrednik = new Fina
+{
+    IsDev = true,
+    OIB = "...",
+    Certificate = ...
+};
+```
+
+### Primjer korištenja posrednika
+
+```csharp
+// dohvat računa u razdoblju zadnjih mj. dana
+var racuni = posrednik.UlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
+
+var racun = racuni.FirstOrDefault();
+if(racun != null)
+{
+    // dohvat ubl stringa i pdf byteova
+    string ubl = await posrednik.UlazniUBLAsync(racun.Id);
+    byte[] pdf = await posrednik.UlazniPdfAsync(racun.Id);
+}
+
+// evidentiranje računa
+posrednik.EvidentirajUBLAsync();
+```
+
+> Neki posrednici nemaju podržane sve metode, neki nemaju sve fieldove u modelima tipa UlazniERacun i sl. Mora se voditi računa o tome...
 
 ## Dostupne metode
 
