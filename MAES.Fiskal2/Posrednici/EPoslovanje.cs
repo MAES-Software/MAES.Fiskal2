@@ -7,16 +7,8 @@ namespace MAES.Fiskal2.Posrednici;
 /// <summary>
 /// Implementacija posrednika za ePoslovanje, https://eposlovanje.hr/
 /// </summary>
-public class EPoslovanje : IPosrednik
+public class EPoslovanje : Posrednik
 {
-    const string URI = "https://eracun.eposlovanje.hr";
-    const string URI_DEV = "https://test.eposlovanje.hr";
-
-    /// <summary>
-    /// Označava je li povezivanje na razvojni (test) API endpoint.
-    /// </summary>
-    public bool IsDev { get; set; }
-
     /// <summary>
     /// OIB poslovnog subjekta.
     /// </summary>
@@ -32,11 +24,20 @@ public class EPoslovanje : IPosrednik
     /// </summary>
     public string Password { get; set; } = "";
 
+    /// <summary>
+    ///  Inicijalizira novog ePoslovanje posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
+    /// </summary>
+    public EPoslovanje()
+    {
+        UriProd = "https://eracun.eposlovanje.hr";
+        UriDev = "https://test.eposlovanje.hr";
+    }
+
     HttpClient createClient()
     {
         var client = new HttpClient
         {
-            BaseAddress = new Uri(IsDev ? URI_DEV : URI)
+            BaseAddress = new Uri(Uri)
         };
 
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -100,19 +101,19 @@ public class EPoslovanje : IPosrednik
     /// <summary>
     /// Dohvaća XML/UBL sadržaj ulaznog računa.
     /// </summary>
-    public async Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => 
+    public override async Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => 
         (await sendRequest(HttpMethod.Get, $"/api/v2/document/get/{id}", null, token)).RootElement.GetProperty("document").GetString()!;
 
     /// <summary>
     /// Dohvaća PDF sadržaj ulaznog računa.
     /// </summary>
-    public async Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) =>
+    public override async Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) =>
         Convert.FromBase64String((await sendRequest(HttpMethod.Get, $"/api/v2/document/visualization/{id}", null, token)).RootElement.GetProperty("pdf").GetString()!);
 
     /// <summary>
     /// Dohvaća popis ulaznih e-računa.
     /// </summary>
-    public async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
+    public override async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
     {
         var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/incoming?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
         
@@ -137,19 +138,19 @@ public class EPoslovanje : IPosrednik
     /// <summary>
     /// Dohvaća XML/UBL sadržaj izlaznog računa.
     /// </summary>
-    public Task<string> IzlazniUBLAsync(string id, CancellationToken token = default)
-        => UlazniUBLAsync(id, token);
+    public override async Task<string> IzlazniUBLAsync(string id, CancellationToken token = default)
+        => await UlazniUBLAsync(id, token);
 
     /// <summary>
     /// Dohvaća PDF sadržaj izlaznog računa.
     /// </summary>
-    public Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default)
-        => UlazniPdfAsync(id, token);
+    public override async Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default)
+        => await UlazniPdfAsync(id, token);
 
     /// <summary>
     /// Dohvaća popis izlaznih e-računa.
     /// </summary>
-    public async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(
+    public override async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(
     DateTime from,
     DateTime to,
     CancellationToken token = default)
@@ -177,7 +178,7 @@ public class EPoslovanje : IPosrednik
     /// <summary>
     /// Evidentira UBL dokument u ePoslovanje sustav.
     /// </summary>
-    public async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default) => await sendRequest(HttpMethod.Post, "/api/v2/document/send", new
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default) => await sendRequest(HttpMethod.Post, "/api/v2/document/send", new
     {
         document = ubl,
         softwareId = "MAES.Blagajna"
@@ -186,7 +187,7 @@ public class EPoslovanje : IPosrednik
     /// <summary>
     /// Evidentira uplatu za račun.
     /// </summary>
-    public Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default)
+    public override Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default)
     {
         var status = amount > 0 ? 8 : 7; // 8: partialno, 7: potpuno
         return changeStatusAsync(id, status, partialPaymentAmount: status == 8 ? amount : null, token: token);
@@ -195,6 +196,6 @@ public class EPoslovanje : IPosrednik
     /// <summary>
     /// Odbija račun.
     /// </summary>
-    public Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) =>
+    public override Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) =>
         changeStatusAsync(id, status: 6, $"{razlog}: {opis}", token: token);
 }

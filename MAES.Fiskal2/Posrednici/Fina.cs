@@ -5,7 +5,7 @@ using System.Xml.Linq;
 namespace MAES.Fiskal2.Posrednici;
 
 /// <summary>
-/// Implementacija informacijskog posrednika FINA za razmjenu e-računa.
+/// Implementacija informacijskog posrednika FINA za razmjenu e-računa. Ovo je ili najgori servis ikada ili sam ja retardiran, ali FINA ne dozvoljava dohvat liste računa, PDF-a ili UBL-a. Jedino što se može je poslati račun
 /// </summary>
 public class Fina : Posrednik
 {
@@ -21,7 +21,7 @@ public class Fina : Posrednik
     public X509Certificate2? Certificate { get; set; }
 
     /// <summary>
-    /// Inicijalizira novi primjerak FINA posrednika s unaprijed definiranim URI postavkama za produkcijsko i razvojno okruženje.
+    /// Inicijalizira novog FINA posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
     /// </summary>
     public Fina()
     {
@@ -84,28 +84,8 @@ public class Fina : Posrednik
     /// <param name="amount">Iznos uplate.</param>
     /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="token">Cancellation token.</param>
-    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default)
-    {
-        var msg = new SendB2BOutgoingInvoiceReportingMsg
-        {
-            HeaderSupplier = Header(),
-            Data = new()
-            {
-                 B2BOutgoingInvoiceEnvelope = new()
-                {
-                    SupplierInvoiceID = id,
-                    //TODO: wtf je ovo
-                }
-            }
-        };
-
-        using var client = CreateClient();
-
-        var res = await client.sendB2BOutgoingInvoiceReportingAsync(msg);
-
-        if (res.SendB2BOutgoingInvoiceReportingAckMsg.MessageAck.AckStatus != AckStatusType.ACCEPTED)
-            throw new Exception(res.SendB2BOutgoingInvoiceReportingAckMsg.MessageAck.AckStatusText);
-    }
+    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default) =>
+        throw new NotSupportedException("Evidentiranje uplata nije podržano u FINA posredniku");
 
     /// <summary>
     /// Dohvaća popis izlaznih e-računa za zadani period.

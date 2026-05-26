@@ -1,10 +1,17 @@
+using System.Text.Json.Serialization;
+using MAES.Fiskal2.Posrednici;
+
 namespace MAES.Fiskal2;
 
 /// <summary>
 /// Bazna implementacija posrednika za komunikaciju sa servisom fiskalizacije / eRačuna.
 /// Sadrži zajedničke URI postavke i definira osnovne operacije za rad s ulaznim i izlaznim eRačunima.
 /// </summary>
-public abstract class Posrednik : IPosrednik
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(Super), "Super")]
+[JsonDerivedType(typeof(EPoslovanje), "EPoslovanje")]
+[JsonDerivedType(typeof(Fina), "Fina")]
+public abstract class Posrednik
 {
     /// <summary>
     /// Označava koristi li se razvojno okruženje.

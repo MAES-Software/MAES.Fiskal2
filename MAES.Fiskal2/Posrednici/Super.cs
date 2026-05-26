@@ -8,16 +8,8 @@ namespace MAES.Fiskal2.Posrednici;
 /// <summary>
 /// Implementacija posrednika za Super, https://www.super.hr/
 /// </summary>
-public class Super : IPosrednik
+public class Super : Posrednik
 {
-    const string URI = "https://api.super.hr/";
-    const string URI_DEV = "https://apitest.super.hr/";
-
-    /// <summary>
-    /// Označava je li povezivanje na razvojni (test) API endpoint.
-    /// </summary>
-    public bool IsDev { get; set; }
-    
     /// <summary>
     /// Jedinstveni identifikator poslovnog subjekta u Super sustavu.
     /// </summary>
@@ -35,10 +27,19 @@ public class Super : IPosrednik
 
     static KeyValuePair<string, DateTime>? token = null;
 
+    /// <summary>
+    /// Inicijalizira novog Super posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
+    /// </summary>
+    public Super()
+    {
+        UriProd = "https://api.super.hr/";
+        UriDev = "https://apitest.super.hr/";
+    }
+
     async Task<JsonDocument> postRequest(string uri, Dictionary<string, string> body, CancellationToken cancellationToken)
     {
         using var client = new HttpClient();
-        client.BaseAddress = new Uri(IsDev ? URI_DEV : URI);
+        client.BaseAddress = new Uri(Uri);
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
         if (token == null || DateTime.UtcNow >= token.Value.Value)
@@ -83,7 +84,7 @@ public class Super : IPosrednik
     /// <param name="id">Identifikator ulaznog računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     /// <returns>XML/UBL sadržaj računa kao tekst.</returns>
-    public async Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default)
+    public override async Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
         var jDoc = await postRequest("api/Invoice/GetInvoice", new Dictionary<string, string>
         {
@@ -100,7 +101,7 @@ public class Super : IPosrednik
     /// <param name="id">Identifikator ulaznog računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     /// <returns>PDF sadržaj računa kao bajtni niz.</returns>
-    public async Task<byte[]> UlazniPdfAsync(string id, CancellationToken cancellationToken = default) => Convert.FromBase64String((await postRequest("api/Invoice/GetInvoiceDetailVisualization", new Dictionary<string, string>
+    public override async Task<byte[]> UlazniPdfAsync(string id, CancellationToken cancellationToken = default) => Convert.FromBase64String((await postRequest("api/Invoice/GetInvoiceDetailVisualization", new Dictionary<string, string>
     {
         ["Guid"] = id.ToString()
     }, cancellationToken)).RootElement.GetProperty("invoiceDetailVisualization").GetString()!);
@@ -112,7 +113,7 @@ public class Super : IPosrednik
     /// <param name="to">Krajnji datum vremenskog raspona.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     /// <returns>Popis ulaznih e-računa.</returns>
-    public async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    public override async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
     {
         var jsonDocument = await postRequest("api/Invoice/GetInvoiceList", new Dictionary<string, string>
         {
@@ -141,7 +142,7 @@ public class Super : IPosrednik
     /// <param name="id">Identifikator izlaznog računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     /// <returns>XML/UBL sadržaj računa kao tekst.</returns>
-    public async Task<string> IzlazniUBLAsync(string id, CancellationToken cancellationToken = default)
+    public override async Task<string> IzlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
         var jDoc = await postRequest("api/SendingInvoice/GetSendingInvoice", new Dictionary<string, string>
         {
@@ -159,7 +160,7 @@ public class Super : IPosrednik
     /// <param name="id">Identifikator izlaznog računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     /// <returns>PDF sadržaj računa kao bajtni niz.</returns>
-    public async Task<byte[]> IzlazniPdfAsync(string id, CancellationToken cancellationToken = default)
+    public override async Task<byte[]> IzlazniPdfAsync(string id, CancellationToken cancellationToken = default)
     {
         var jDoc = await postRequest("api/SendingInvoice/GetSendingInvoiceDetailVisualization", new Dictionary<string, string>
         {
@@ -180,7 +181,7 @@ public class Super : IPosrednik
     /// <param name="to">Krajnji datum vremenskog raspona.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     /// <returns>Popis izlaznih e-računa.</returns>
-    public async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken)
+    public override async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken)
     {
         var jsonDocument = await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
         {
@@ -208,7 +209,7 @@ public class Super : IPosrednik
     /// </summary>
     /// <param name="ubl">UBL XML dokument ulaznog računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
     {
         ["Base64EncodedUbl"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl)),
         ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
@@ -222,7 +223,7 @@ public class Super : IPosrednik
     /// <param name="amount">Iznos uplate.</param>
     /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
+    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
     {
         await postRequest("api/Invoice/SetInvoicePayment", new Dictionary<string, string>
         {
@@ -237,7 +238,7 @@ public class Super : IPosrednik
     /// <param name="razlog">Razlog odbijanja računa.</param>
     /// <param name="opis">Opis razloga odbijanja.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public async Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken cancellationToken = default)
+    public override async Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken cancellationToken = default)
     {
         await postRequest("api/SendingInvoice/RejectSendingInvoice", new Dictionary<string, string>
         {

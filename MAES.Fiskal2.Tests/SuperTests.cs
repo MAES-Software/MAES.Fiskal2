@@ -13,5 +13,8 @@ public class SuperTests
     };
 
     [Fact]
-    public async Task SendInvoiceUBL() => await super.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
+    public async Task SendInvoiceUBL()
+    {
+        await super.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
+    }
 }
