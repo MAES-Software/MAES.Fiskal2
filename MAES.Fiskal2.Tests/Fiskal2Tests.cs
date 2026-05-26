@@ -25,6 +25,13 @@ public class SuperTests
             OIB = Environment.GetEnvironmentVariable("FINA_OIB") ?? throw new InvalidOperationException("FINA_OIB environment variable is not set."),
             //Certificate = LoadCertificateFromStore(Environment.GetEnvironmentVariable("FINA_CERT_THUMBPRINT") ?? throw new InvalidOperationException("FINA_CERT_THUMBPRINT environment variable is not set.")),
             IsDev = true
+        },
+        new MER
+        {
+            OIB = Environment.GetEnvironmentVariable("MER_OIB") ?? throw new InvalidOperationException("MER_OIB environment variable is not set."),
+            Username = Environment.GetEnvironmentVariable("MER_USERNAME") ?? throw new InvalidOperationException("MER_USERNAME environment variable is not set."),
+            Password = Environment.GetEnvironmentVariable("MER_PASSWORD") ?? throw new InvalidOperationException("MER_PASSWORD environment variable is not set."),
+            IsDev = true
         }
     ];
 

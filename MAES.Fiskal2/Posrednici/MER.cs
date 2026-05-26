@@ -31,8 +31,8 @@ public class MER : Posrednik
     /// </summary>
     public MER()
     {
-        UriProd = "https://www.moj-eracun.hr/apis/v2/";
-        UriDev = "https://demo.moj-eracun.hr/apis/v2/";
+        UriProd = "https://www.moj-eracun.hr";
+        UriDev = "https://demo.moj-eracun.hr";
     }
 
     async Task<string> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
