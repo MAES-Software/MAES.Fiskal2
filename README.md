@@ -24,17 +24,19 @@ Modeli `UlazniERacun` i `IzlazniERacun` predstavljaju minimalne informacije o ra
 
 U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
-| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` |
-|---|:---:|:---:|:---:|
-| Dohvat ulaznih e-računa | ✅ | ✅ | ❌* |
-| Dohvat izlaznih e-računa | ✅ | ✅ | ❌* |
-| Dohvat UBL sadržaja | ✅ | ✅ | ❌* |
-| Dohvat PDF sadržaja | ✅ | ✅ | ❌* |
-| Evidentiranje UBL dokumenta | ✅ | ✅ | ✅ |
-| Evidentiranje uplate | ✅ | ✅ | ❌* |
-| Odbijanje računa | ✅ | ✅ | ❌* |
+| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `Moj eRačun` |
+|---|:---:|:---:|:---:|:---:|
+| Dohvat ulaznih e-računa | ✅ | ✅ | ❌* | ❌ |
+| Dohvat izlaznih e-računa | ✅ | ✅ | ❌* | ❌ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌* | ✅ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌* | ❌** |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ✅ | ✅ |
+| Evidentiranje uplate | ✅ | ✅ | ❌* | ❌ |
+| Odbijanje računa | ✅ | ✅ | ❌* | ❌ |
 
 \* Fina nema pola ovih api callova ili su na nekom drugom endpointu treba vidit
+
+\*\* MER ne podržava dohvat PDF byte[]
 
 ## Instalacija
 

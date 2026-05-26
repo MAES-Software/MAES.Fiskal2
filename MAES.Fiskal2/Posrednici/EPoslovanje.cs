@@ -49,14 +49,16 @@ public class EPoslovanje : Posrednik
     {
         using var client = createClient();
 
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/account/apikey");
-        request.Content = new StringContent(JsonSerializer.Serialize(new
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/account/apikey")
         {
-            username = Username,
-            password = Password,
-            vatId = OIB,
-            softwareId = "MAES.Fiskal2"
-        }), Encoding.UTF8, "application/json");
+            Content = new StringContent(JsonSerializer.Serialize(new
+            {
+                username = Username,
+                password = Password,
+                vatId = OIB,
+                softwareId = "MAES.Fiskal2"
+            }), Encoding.UTF8, "application/json")
+        };
 
         var response = await client.SendAsync(request);
         var json = await response.Content.ReadAsStringAsync();
