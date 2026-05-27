@@ -73,7 +73,7 @@ public class Super : Posrednik
         if (!response.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom slanja zahtjeva: {uri}");
 
         var jsonDocument = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        if(jsonDocument.RootElement.GetProperty("errorMessage").GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
+        if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
         return jsonDocument;
     }
 

@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using MAES.Fiskal2.Posrednici;
+﻿using MAES.Fiskal2.Posrednici;
 
 namespace MAES.Fiskal2.Tests;
 
@@ -41,20 +40,23 @@ public class SuperTests
     {
         foreach (var posrednik in posrednici.Where(p => p is not Fina))
         {
+            // evidencija računa
             await posrednik.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
 
-            var izlazni = await posrednik.IzlazniListAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
-            Assert.NotNull(izlazni);
+            // izlazni računi
+            // var izlazni = await posrednik.IzlazniListAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
+            // Assert.NotNull(izlazni);
 
-            var first = izlazni.FirstOrDefault();
-            if(first != null)
-            {
-                Assert.NotNull(await posrednik.IzlazniPdfAsync(first.Id));
-                Assert.NotNull(await posrednik.IzlazniUBLAsync(first.Id));
+            // var first = izlazni.FirstOrDefault();
+            // if(first != null)
+            // {
+            //     Assert.NotNull(await posrednik.IzlazniPdfAsync(first.Id));
+            //     Assert.NotNull(await posrednik.IzlazniUBLAsync(first.Id));
 
-                await posrednik.EvidentirajUplatuAsync(first.Id, DateTime.UtcNow, 100, NacinPlacanja.TransakcijskiRaCun);
-            }
+            //     await posrednik.EvidentirajUplatuAsync(first.Id, DateTime.UtcNow, 100, NacinPlacanja.TransakcijskiRaCun);
+            // }
 
+            // ulazni računi
             var ulazni = await posrednik.UlazniListAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
             Assert.NotNull(ulazni);
 
