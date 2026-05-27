@@ -22,12 +22,12 @@ public abstract class Posrednik
     /// <summary>
     /// Produkcijski URI servisa.
     /// </summary>
-    protected string UriProd { get; set; } = "";
+    protected string UriProd { private get; set; } = "";
 
     /// <summary>
     /// URI razvojnog (testnog) okruženja servisa.
     /// </summary>
-    protected string UriDev { get; set; } = "";
+    protected string UriDev { private get; set; } = "";
 
     /// <summary>
     /// Aktivni URI servisa ovisno o odabranom okruženju.
@@ -65,11 +65,16 @@ public abstract class Posrednik
     /// <param name="to">Završni datum razdoblja.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>Kolekcija izlaznih eRačuna.</returns>
-    public virtual Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(
-        DateTime from,
-        DateTime to,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) => throw new NotImplementedException();
+
+    /// <summary>
+    /// Dohvaća popis izlaznih eRačuna unutar zadanog razdoblja.
+    /// </summary>
+    /// <param name="page">Stranica rezultata.</param>
+    /// <param name="pageSize">Broj rezultata po stranici.</param>
+    /// <param name="token">Token za otkazivanje operacije.</param>
+    /// <returns>Kolekcija izlaznih eRačuna.</returns>
+    public virtual Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(int page, int pageSize, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Dohvaća PDF prikaz izlaznog računa.
@@ -114,11 +119,16 @@ public abstract class Posrednik
     /// <param name="to">Završni datum razdoblja.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>Kolekcija ulaznih eRačuna.</returns>
-    public virtual Task<IEnumerable<UlazniERacun>> UlazniListAsync(
-        DateTime from,
-        DateTime to,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) => throw new NotImplementedException();
+
+    /// <summary>
+    /// Dohvaća popis ulaznih eRačuna unutar zadanog razdoblja.
+    /// </summary>
+    /// <param name="page">Stranica rezultata.</param>
+    /// <param name="pageSize">Broj rezultata po stranici.</param>
+    /// <param name="token">Token za otkazivanje operacije.</param>
+    /// <returns>Kolekcija ulaznih eRačuna.</returns>
+    public virtual Task<IEnumerable<UlazniERacun>> UlazniListAsync(int page, int pageSize, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Dohvaća PDF prikaz ulaznog računa.

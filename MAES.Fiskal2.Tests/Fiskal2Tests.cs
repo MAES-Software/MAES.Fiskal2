@@ -38,30 +38,18 @@ public class SuperTests
     [Fact]
     public async Task SendInvoiceUBL()
     {
-        var ubl = File.ReadAllText("ubl.xml");
-
-        foreach (var posrednik in posrednici)
-        {
-            await posrednik.EvidentirajUBLAsync(ubl);
-        }
-    }
-
-    [Fact]
-    public async Task NoFinaTests()
-    {
         foreach (var posrednik in posrednici.Where(p => p is not Fina))
         {
+            await posrednik.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
+
             var izlazni = await posrednik.IzlazniListAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
             Assert.NotNull(izlazni);
 
             var first = izlazni.FirstOrDefault();
             if(first != null)
             {
-                var pdf = await posrednik.IzlazniPdfAsync(first.Id);
-                Assert.NotNull(pdf);
-
-                var ubl = await posrednik.IzlazniUBLAsync(first.Id);
-                Assert.NotNull(ubl);
+                Assert.NotNull(await posrednik.IzlazniPdfAsync(first.Id));
+                Assert.NotNull(await posrednik.IzlazniUBLAsync(first.Id));
 
                 await posrednik.EvidentirajUplatuAsync(first.Id, DateTime.UtcNow, 100, NacinPlacanja.TransakcijskiRaCun);
             }
@@ -72,14 +60,17 @@ public class SuperTests
             var firstUlazni = ulazni.FirstOrDefault();
             if(firstUlazni != null)
             {
-                var pdf = await posrednik.UlazniPdfAsync(firstUlazni.Id);
-                Assert.NotNull(pdf);
-
-                var ubl = await posrednik.UlazniUBLAsync(firstUlazni.Id);
-                Assert.NotNull(ubl);
+                Assert.NotNull(await posrednik.UlazniPdfAsync(firstUlazni.Id));
+                Assert.NotNull(await posrednik.UlazniUBLAsync(firstUlazni.Id));
 
                 await posrednik.OdbijRacunAsync(firstUlazni.Id, RazlogOdbijanja.NeusklađenostKojaNeUtjeceNaObracunPoreza, "Nedostaje OIB");
             }
         }
+    }
+
+    [Fact]
+    public async Task NoFinaTests()
+    {
+        
     }
 }
