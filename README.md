@@ -98,8 +98,9 @@ var posrednik = new MER
 ### Primjer korištenja posrednika
 
 ```csharp
-// dohvat računa u razdoblju zadnjih mj. dana
+// dohvat računa u razdoblju zadnjih mj. dana ili dohvati paginacijom zavisi sto posrednik podržava
 var racuni = posrednik.UlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
+var racuni = posrednik.UlazniListAsync(1, 20);
 
 var racun = racuni.FirstOrDefault();
 if(racun != null)

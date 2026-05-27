@@ -1,4 +1,5 @@
-﻿using MAES.Fiskal2.Posrednici;
+﻿using System.Security.Cryptography.X509Certificates;
+using MAES.Fiskal2.Posrednici;
 
 namespace MAES.Fiskal2.Tests;
 
@@ -13,26 +14,26 @@ public class SuperTests
             Password = Environment.GetEnvironmentVariable("SUPER_PASSWORD") ?? throw new InvalidOperationException("SUPER_PASSWORD environment variable is not set."),
             IsDev = true
         },
-        new EPoslovanje
-        {
-            OIB = Environment.GetEnvironmentVariable("EPOSLOVANJE_OIB") ?? throw new InvalidOperationException("EPOSLOVANJE_OIB environment variable is not set."),
-            Username = Environment.GetEnvironmentVariable("EPOSLOVANJE_USERNAME") ?? throw new InvalidOperationException("EPOSLOVANJE_USERNAME environment variable is not set."),
-            Password = Environment.GetEnvironmentVariable("EPOSLOVANJE_PASSWORD") ?? throw new InvalidOperationException("EPOSLOVANJE_PASSWORD environment variable is not set."),
-            IsDev = true
-        },
-        new Fina
-        {
-            OIB = Environment.GetEnvironmentVariable("FINA_OIB") ?? throw new InvalidOperationException("FINA_OIB environment variable is not set."),
-            //Certificate = LoadCertificateFromStore(Environment.GetEnvironmentVariable("FINA_CERT_THUMBPRINT") ?? throw new InvalidOperationException("FINA_CERT_THUMBPRINT environment variable is not set.")),
-            IsDev = true
-        },
-        new MER
-        {
-            OIB = Environment.GetEnvironmentVariable("MER_OIB") ?? throw new InvalidOperationException("MER_OIB environment variable is not set."),
-            Username = Environment.GetEnvironmentVariable("MER_USERNAME") ?? throw new InvalidOperationException("MER_USERNAME environment variable is not set."),
-            Password = Environment.GetEnvironmentVariable("MER_PASSWORD") ?? throw new InvalidOperationException("MER_PASSWORD environment variable is not set."),
-            IsDev = true
-        }
+        // new EPoslovanje
+        // {
+        //     OIB = Environment.GetEnvironmentVariable("EPOSLOVANJE_OIB") ?? throw new InvalidOperationException("EPOSLOVANJE_OIB environment variable is not set."),
+        //     Username = Environment.GetEnvironmentVariable("EPOSLOVANJE_USERNAME") ?? throw new InvalidOperationException("EPOSLOVANJE_USERNAME environment variable is not set."),
+        //     Password = Environment.GetEnvironmentVariable("EPOSLOVANJE_PASSWORD") ?? throw new InvalidOperationException("EPOSLOVANJE_PASSWORD environment variable is not set."),
+        //     IsDev = true
+        // },
+        // new Fina
+        // {
+        //     OIB = Environment.GetEnvironmentVariable("FINA_OIB") ?? throw new InvalidOperationException("FINA_OIB environment variable is not set."),
+        //     Certificate = ...,
+        //     IsDev = true
+        // },
+        // new MER
+        // {
+        //     OIB = Environment.GetEnvironmentVariable("MER_OIB") ?? throw new InvalidOperationException("MER_OIB environment variable is not set."),
+        //     Username = Environment.GetEnvironmentVariable("MER_USERNAME") ?? throw new InvalidOperationException("MER_USERNAME environment variable is not set."),
+        //     Password = Environment.GetEnvironmentVariable("MER_PASSWORD") ?? throw new InvalidOperationException("MER_PASSWORD environment variable is not set."),
+        //     IsDev = true
+        // }
     ];
 
     [Fact]
@@ -66,11 +67,5 @@ public class SuperTests
                 await posrednik.OdbijRacunAsync(firstUlazni.Id, RazlogOdbijanja.NeusklađenostKojaNeUtjeceNaObracunPoreza, "Nedostaje OIB");
             }
         }
-    }
-
-    [Fact]
-    public async Task NoFinaTests()
-    {
-        
     }
 }
