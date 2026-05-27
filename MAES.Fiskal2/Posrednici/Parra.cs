@@ -5,9 +5,9 @@ using System.Text.Json;
 namespace MAES.Fiskal2.Posrednici;
 
 /// <summary>
-/// Implementacija posrednika za ePoslovanje, https://eposlovanje.hr/
+/// Implementacija posrednika Parra v1.1. https://api.parra.hr/docs/#api-v11
 /// </summary>
-public class EPoslovanje : Posrednik
+public class Parra : Posrednik
 {
     /// <summary>
     /// OIB poslovnog subjekta.
@@ -25,12 +25,12 @@ public class EPoslovanje : Posrednik
     public string Password { get; set; } = "";
 
     /// <summary>
-    ///  Inicijalizira novog ePoslovanje posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
+    ///  Inicijalizira novog Parra posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
     /// </summary>
-    public EPoslovanje()
+    public Parra()
     {
-        UriProd = "https://eracun.eposlovanje.hr";
-        UriDev = "https://test.eposlovanje.hr";
+        UriProd = "https://api.parra.hr";
+        UriDev = "";
     }
 
     HttpClient createClient()

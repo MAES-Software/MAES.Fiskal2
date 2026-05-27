@@ -10,7 +10,7 @@ MAES.Fiskal2 je C# biblioteka za rad s Hrvatskim fiskalnim posrednicima. Cilj pr
 
 ## Što projekt radi
 
-Projekt definira zajedničko sučelje `IPosrednik` koje opisuje osnovne operacije za posrednike fiskalizacije:
+Projekt definira zajedničku abstraktnu klasu `Posrednik` koja opisuje osnovne operacije za posrednike fiskalizacije:
 
 - dohvat ulaznih i izlaznih e-računa
 - dohvat UBL i PDF sadržaja računa
@@ -24,15 +24,19 @@ Modeli `UlazniERacun` i `IzlazniERacun` predstavljaju minimalne informacije o ra
 
 U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
-| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` |
-|---|:---:|:---:|:---:|
-| Dohvat ulaznih e-računa | ✅ | ✅ | ❌ |
-| Dohvat izlaznih e-računa | ✅ | ✅ | ❌ |
-| Dohvat UBL sadržaja | ✅ | ✅ | ❌ |
-| Dohvat PDF sadržaja | ✅ | ✅ | ❌ |
-| Evidentiranje UBL dokumenta | ✅ | ✅ | ❌ |
-| Evidentiranje uplate | ✅ | ✅ | ❌ |
-| Odbijanje računa | ✅ | ✅ | ❌ |
+| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `Moj eRačun` | `Redok` | `Parra` |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| Dohvat ulaznih e-računa | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ |
+| Dohvat izlaznih e-računa | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌* | ✅ | ❌ | ❌ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌* | ❌** | ❌ | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Evidentiranje uplate | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ |
+| Odbijanje računa | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ |
+
+\* Fina nema pola ovih api callova ili su na nekom drugom endpointu treba vidit
+
+\*\* MER ne podržava dohvat PDF byte[]
 
 ## Instalacija
 
@@ -52,11 +56,10 @@ Ili direktno u datoteku `.csproj`:
 
 ## Inicijalizacija posrednika
 
-### Primjer inicijalizacije Super.hr posrednika:
-
 ```csharp
 using MAES.Fiskal2.Posrednici;
 
+// Super.hr
 var posrednik = new Super
 {
     IsDev = true,
@@ -64,13 +67,8 @@ var posrednik = new Super
     Username = "...",
     Password = "..."
 };
-```
 
-### Primjer inicijalizacije eposlovanje.hr posrednika:
-
-```csharp
-using MAES.Fiskal2.Posrednici;
-
+// ePoslovanje
 var posrednik = new EPoslovanje
 {
     IsDev = true,
@@ -78,18 +76,60 @@ var posrednik = new EPoslovanje
     Username = "...",
     Password = "..."
 };
+
+// Fina
+var posrednik = new Fina
+{
+    IsDev = true,
+    OIB = "...",
+    Certificate = ...
+};
+
+// Moj eRačun
+var posrednik = new MER
+{
+    IsDev = true,
+    Username = "...",
+    Password = "...",
+    OIB = "..."
+};
 ```
+
+### Primjer korištenja posrednika
+
+```csharp
+// dohvat računa u razdoblju zadnjih mj. dana ili dohvati paginacijom zavisi sto posrednik podržava
+var racuni = posrednik.UlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
+var racuni = posrednik.UlazniListAsync(1, 20);
+
+var racun = racuni.FirstOrDefault();
+if(racun != null)
+{
+    // dohvat ubl stringa i pdf byteova
+    string ubl = await posrednik.UlazniUBLAsync(racun.Id);
+    byte[] pdf = await posrednik.UlazniPdfAsync(racun.Id);
+}
+
+// evidentiranje računa
+posrednik.EvidentirajUBLAsync(ubl);
+```
+
+> Neki posrednici nemaju podržane sve metode, neki nemaju sve fieldove u modelima tipa UlazniERacun i sl. Mora se voditi računa o tome...
 
 ## Dostupne metode
 
 > Svaka metoda ima na kraju CancellationToken kojeg je poželjno postaviti, ali se može izostaviti
 
-Sučelje `IPosrednik` nudi sljedeće metode:
+Abstraktna klasa `Posrednik` nudi sljedeće metode:
 
 ### Dohvat ulaznih e-računa
 - `Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to)`
     
     Dohvaća popis ulaznih računa u vremenskom rasponu
+
+- `Task<IEnumerable<UlazniERacun>> UlazniListAsync(int page, int pageSize)`
+    
+    Dohvaća popis ulaznih računa (pagination)
 
 - `Task<string> UlazniUBLAsync(string id)`
     
@@ -103,6 +143,10 @@ Sučelje `IPosrednik` nudi sljedeće metode:
 - `Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to)`
 
     Dohvaća popis izlaznih računa u vremenskom rasponu
+
+- `Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(int page, int pageSize)`
+    
+    Dohvaća popis izlaznih računa (pagination)
 
 - `Task<string> IzlazniUBLAsync(string id)`
 
@@ -118,11 +162,11 @@ Sučelje `IPosrednik` nudi sljedeće metode:
 
     Evidentira UBL dokument
     
-- `Task EvidentirajUplatuAsync(string id)`
+- `Task EvidentirajUplatuAsync(string id, DateTime datum, double iznos, NacinPlacanja nacinPlacanja)`
 
     Evidentira uplatu za račun
 
-- `Task OdbijRacunAsync(string id)`
+- `Task OdbijRacunAsync(string id, RazlogOdbijana razlog, string opis)`
 
     Odbija račun
 
