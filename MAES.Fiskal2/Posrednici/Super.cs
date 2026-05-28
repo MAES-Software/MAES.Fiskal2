@@ -33,8 +33,30 @@ public class Super : Posrednik
     {
         BaseAddressProd = "https://api.super.hr/";
         BaseAddressDev = "https://apitest.super.hr/";
-        OnClientCreated += (s, e) =>
+        OnClientCreated += async (s, e) =>
         {
+            if (token == null || DateTime.UtcNow >= token.Value.Value)
+            {
+                using var client = new HttpClient();
+                client.BaseAddress = new Uri(BaseAddress);
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
+                tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "password", ["username"] = Username, ["password"] = Password });
+
+                var tokenResponse = await client.SendAsync(tokenRequest);
+
+                if (!tokenResponse.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom dohvaćanja tokena");
+
+                using var doc = JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync());
+
+                token = new KeyValuePair<string, DateTime>(
+                    doc.RootElement.GetProperty("access_token").GetString()!,
+                    DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32() - 60)
+                );
+            }
+
             e.Client.DefaultRequestHeaders.TryAddWithoutValidation("Bearer", token!.Value.Key);
         };
     }
@@ -211,6 +233,9 @@ public class Super : Posrednik
 
     async Task<JsonDocument> postRequestAsync(string uri, Dictionary<string, string> data, CancellationToken cancellationToken = default)
     {
+        data.Add("MessageId", Guid.NewGuid().ToString());
+        data.Add("CompanyGuid", BusinessGuid);
+
         var content = await SendRequest(HttpMethod.Post, uri, data, cancellationToken);
         var doc = JsonDocument.Parse(content);
 
