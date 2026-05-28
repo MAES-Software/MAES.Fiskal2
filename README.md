@@ -33,6 +33,7 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije
 | Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | ⚠️ | 🚧 | 🚧 | ⚠️ |
 | Evidentiranje uplate | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
 | Odbijanje računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Prihvaćanje računa | ❌ | 🚧 | ❌ | 🚧 | 🚧 | 🚧 | 🚧 |
 
 * ✅ — Implementirano
 * ⚠️ — Nije testirano/Ne prolazi testove
@@ -175,7 +176,11 @@ Abstraktna klasa `Posrednik` nudi sljedeće metode:
 
 - `Task OdbijRacunAsync(string id, RazlogOdbijana razlog, string opis)`
 
-    Odbija račun
+    Odbija ulazni eRačun
+
+- `Task PrihvatiRacunAsync(string id)`
+
+    Prihvaća ulazni eRačun
 
 ## Izgradnja i pakiranje
 
