@@ -17,6 +17,9 @@ jobs:
       SUPER_BUSINESS_GUID: ${{ secrets.SUPER_BUSINESS_GUID }}
       SUPER_USERNAME: ${{ secrets.SUPER_USERNAME }}
       SUPER_PASSWORD: ${{ secrets.SUPER_PASSWORD }}
+      EPOSLOVANJE_USERNAME: ${{ secrets.EPOSLOVANJE_USERNAME }}
+      EPOSLOVANJE_PASSWORD: ${{ secrets.EPOSLOVANJE_PASSWORD }}
+      DOKU_API_KEY: ${{ secrets.DOKU_API_KEY }}
 
     steps:
       - name: Checkout repository
