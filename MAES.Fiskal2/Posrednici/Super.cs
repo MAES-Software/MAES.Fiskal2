@@ -57,7 +57,9 @@ public class Super : Posrednik
                 );
             }
 
-            e.Client.DefaultRequestHeaders.TryAddWithoutValidation("Bearer", token!.Value.Key);
+            e.Client.DefaultRequestHeaders.TryAddWithoutValidation("Bearer", token.Value.Key);
+            if(!e.Client.DefaultRequestHeaders.Contains("Content-Type")) e.Client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/x-www-form-urlencoded");
+            if(!e.Client.DefaultRequestHeaders.Contains("Accept")) e.Client.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json");
         };
     }
 
