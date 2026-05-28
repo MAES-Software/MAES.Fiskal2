@@ -211,4 +211,14 @@ public class Super : Posrednik
             ["RejectionReasonDescription"] = opis
          }, cancellationToken);
     }
+
+    async Task postRequestAsync(string uri, Dictionary<string, string> data, CancellationToken cancellationToken = default)
+    {
+        var content = await SendRequest(HttpMethod.Post, uri, data, cancellationToken);
+        var doc = JsonDocument.Parse(content);
+
+        if(doc.RootElement.TryGetProperty("errorMessage", out var el) && el.GetString() is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage)) throw new Exception(errorMessage);
+
+        
+    }
 }

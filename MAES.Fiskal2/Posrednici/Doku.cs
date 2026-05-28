@@ -23,7 +23,7 @@ public class Doku : Posrednik
         BaseAddressDev = "https://api-test.doku.hr";
         OnClientCreated += (s, e) =>
         {
-            e.Client.DefaultRequestHeaders.TryAddWithoutValidation("DOKU-API-KEY", ApiKey);
+            e.Client.DefaultRequestHeaders.TryAddWithoutValidation("SOFTWARE-API-TOKEN", ApiKey);
         };
     }
 
