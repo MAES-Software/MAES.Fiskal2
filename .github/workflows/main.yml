@@ -34,7 +34,7 @@ jobs:
         run: dotnet restore MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj
 
       - name: Run tests
-        run: dotnet test MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj --configuration Release --no-restore
+        run: dotnet test MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj --configuration Release --no-restore -v normal --logger "console;verbosity=detailed"
 
   pack-and-publish:
     name: Pack and publish package
