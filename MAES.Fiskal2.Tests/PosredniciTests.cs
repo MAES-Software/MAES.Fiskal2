@@ -26,19 +26,6 @@ public class PosredniciTests(ITestOutputHelper output)
         {
             ApiKey = Environment.GetEnvironmentVariable("DOKU_API_KEY") ?? throw new InvalidOperationException("DOKU_API_KEY environment variable is not set."),
             IsDev = true
-        },
-        new Fina
-        {
-            OIB = "51560545524",
-            //Certificate = ...,
-            IsDev = true
-        },
-        new MER
-        {
-            OIB = "51560545524",
-            Username = Environment.GetEnvironmentVariable("MER_USERNAME") ?? throw new InvalidOperationException("MER_USERNAME environment variable is not set."),
-            Password = Environment.GetEnvironmentVariable("MER_PASSWORD") ?? throw new InvalidOperationException("MER_PASSWORD environment variable is not set."),
-            IsDev = true
         }
     ];
 

@@ -26,19 +26,18 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
 | Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `MER` | `Redok` | `Tvoj eRačun` | `Doku` |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Ulazni računi (datum) | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ | ❌ |
-| Ulazni računi (paginacija) | ❌ | ❌ | ❌* | ❌ | ❌ | ❌ | ❌ |
-| Izlazni računi (datum) | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ | ❌ |
-| Izlazni računi (paginacija) | ❌ | ❌ | ❌* | ❌ | ❌ | ❌ | ❌ |
-| Dohvat UBL sadržaja | ✅ | ✅ | ❌* | ✅ | ❌ | ❌ | ❌ |
-| Dohvat PDF sadržaja | ✅ | ✅ | ❌* | ❌** | ❌ | ❌ | ❌ |
-| Evidentiranje UBL dokumenta | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ |
-| Evidentiranje uplate | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ | ❌ |
-| Odbijanje računa | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ | ❌ |
+| Dohvat ulaznih računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Dohvat izlaznih računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌ | ⚠️ | 🚧 | 🚧 | ⚠️ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌ | ❌ | 🚧 | 🚧 | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | ⚠️ | 🚧 | 🚧 | ⚠️ |
+| Evidentiranje uplate | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Odbijanje računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
 
-\* Fina nema pola ovih api callova ili su na nekom drugom endpointu treba vidit
-
-\*\* MER ne podržava dohvat PDF byte[]
+* ✅ — Implementirano
+* ⚠️ — Nije testirano/Ne prolazi testove
+* 🚧 — Nije još implementirano
+* ❌ — Posrednik ne podržava
 
 ## Instalacija
 
@@ -107,9 +106,8 @@ var posrednik = new MER
 ### Primjer korištenja posrednika
 
 ```csharp
-// dohvat računa u razdoblju zadnjih mj. dana ili dohvati paginacijom zavisi sto posrednik podržava
+// dohvat računa u razdoblju zadnjih mj. dana
 var racuni = posrednik.UlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
-var racuni = posrednik.UlazniListAsync(1, 20);
 
 var racun = racuni.FirstOrDefault();
 if(racun != null)
