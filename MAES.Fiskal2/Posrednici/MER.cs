@@ -62,7 +62,7 @@ public class MER : Posrednik
     /// </summary>
     /// <param name="ubl">UBL XML sadržaj e-računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) =>await sendRequest(HttpMethod.Post, "/apis/v2/send", new
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await sendRequest(HttpMethod.Post, "/apis/v2/send", new
     {
         Username,
         Password,

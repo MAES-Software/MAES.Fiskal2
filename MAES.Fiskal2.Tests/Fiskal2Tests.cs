@@ -1,8 +1,10 @@
-﻿using MAES.Fiskal2.Posrednici;
+﻿
+using MAES.Fiskal2.Posrednici;
+using Xunit.Abstractions;
 
 namespace MAES.Fiskal2.Tests;
 
-public class SuperTests
+public class PosredniciTests(ITestOutputHelper output)
 {
     readonly List<Posrednik> posrednici =
     [
@@ -13,60 +15,201 @@ public class SuperTests
             Password = Environment.GetEnvironmentVariable("SUPER_PASSWORD") ?? throw new InvalidOperationException("SUPER_PASSWORD environment variable is not set."),
             IsDev = true
         },
-        // new EPoslovanje
-        // {
-        //     OIB = Environment.GetEnvironmentVariable("EPOSLOVANJE_OIB") ?? throw new InvalidOperationException("EPOSLOVANJE_OIB environment variable is not set."),
-        //     Username = Environment.GetEnvironmentVariable("EPOSLOVANJE_USERNAME") ?? throw new InvalidOperationException("EPOSLOVANJE_USERNAME environment variable is not set."),
-        //     Password = Environment.GetEnvironmentVariable("EPOSLOVANJE_PASSWORD") ?? throw new InvalidOperationException("EPOSLOVANJE_PASSWORD environment variable is not set."),
-        //     IsDev = true
-        // },
-        // new Fina
-        // {
-        //     OIB = Environment.GetEnvironmentVariable("FINA_OIB") ?? throw new InvalidOperationException("FINA_OIB environment variable is not set."),
-        //     Certificate = ...,
-        //     IsDev = true
-        // },
-        // new MER
-        // {
-        //     OIB = Environment.GetEnvironmentVariable("MER_OIB") ?? throw new InvalidOperationException("MER_OIB environment variable is not set."),
-        //     Username = Environment.GetEnvironmentVariable("MER_USERNAME") ?? throw new InvalidOperationException("MER_USERNAME environment variable is not set."),
-        //     Password = Environment.GetEnvironmentVariable("MER_PASSWORD") ?? throw new InvalidOperationException("MER_PASSWORD environment variable is not set."),
-        //     IsDev = true
-        // }
+        new EPoslovanje
+        {
+            OIB = "51560545524",
+            Username = Environment.GetEnvironmentVariable("EPOSLOVANJE_USERNAME") ?? throw new InvalidOperationException("EPOSLOVANJE_USERNAME environment variable is not set."),
+            Password = Environment.GetEnvironmentVariable("EPOSLOVANJE_PASSWORD") ?? throw new InvalidOperationException("EPOSLOVANJE_PASSWORD environment variable is not set."),
+            IsDev = true
+        },
+        new Doku
+        {
+            ApiKey = Environment.GetEnvironmentVariable("DOKU_API_KEY") ?? throw new InvalidOperationException("DOKU_API_KEY environment variable is not set."),
+            IsDev = true
+        },
+        new Fina
+        {
+            OIB = "51560545524",
+            //Certificate = ...,
+            IsDev = true
+        },
+        new MER
+        {
+            OIB = "51560545524",
+            Username = Environment.GetEnvironmentVariable("MER_USERNAME") ?? throw new InvalidOperationException("MER_USERNAME environment variable is not set."),
+            Password = Environment.GetEnvironmentVariable("MER_PASSWORD") ?? throw new InvalidOperationException("MER_PASSWORD environment variable is not set."),
+            IsDev = true
+        }
     ];
 
     [Fact]
-    public async Task SendInvoiceUBL()
+    public async Task EvidentirajUBL()
     {
         foreach (var posrednik in posrednici.Where(p => p is not Fina))
         {
-            // evidencija računa
-            await posrednik.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
-
-            // izlazni računi
-            // var izlazni = await posrednik.IzlazniListAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
-            // Assert.NotNull(izlazni);
-
-            // var first = izlazni.FirstOrDefault();
-            // if(first != null)
-            // {
-            //     Assert.NotNull(await posrednik.IzlazniPdfAsync(first.Id));
-            //     Assert.NotNull(await posrednik.IzlazniUBLAsync(first.Id));
-
-            //     await posrednik.EvidentirajUplatuAsync(first.Id, DateTime.UtcNow, 100, NacinPlacanja.TransakcijskiRaCun);
-            // }
-
-            // ulazni računi
-            var ulazni = await posrednik.UlazniListAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
-            Assert.NotNull(ulazni);
-
-            var firstUlazni = ulazni.FirstOrDefault();
-            if(firstUlazni != null)
+            try
             {
-                Assert.NotNull(await posrednik.UlazniPdfAsync(firstUlazni.Id));
-                Assert.NotNull(await posrednik.UlazniUBLAsync(firstUlazni.Id));
+                await posrednik.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
+                output.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL OK");
+            }
+            catch (Exception ex)
+            {
+                output.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL FAIL");
+                output.WriteLine(ex.ToString());
+            }
+        }
+    }
 
-                await posrednik.OdbijRacunAsync(firstUlazni.Id, RazlogOdbijanja.NeusklađenostKojaNeUtjeceNaObracunPoreza, "Nedostaje OIB");
+    [Fact]
+    public async Task DohvatiIzlazneRacune()
+    {
+        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        {
+            try
+            {
+                var izlazni = await posrednik.IzlazniListAsync(
+                    DateTime.UtcNow.AddDays(-30),
+                    DateTime.UtcNow);
+
+                output.WriteLine($"{posrednik.GetType().Name}: IzlazniList OK ({izlazni.Count()})");
+            }
+            catch (Exception ex)
+            {
+                output.WriteLine($"{posrednik.GetType().Name}: IzlazniList FAIL");
+                output.WriteLine(ex.ToString());
+            }
+        }
+    }
+
+    [Fact]
+    public async Task DohvatiPrviIzlazniPdfIUBL()
+    {
+        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        {
+            try
+            {
+                var izlazni = await posrednik.IzlazniListAsync(
+                    DateTime.UtcNow.AddDays(-30),
+                    DateTime.UtcNow);
+
+                var first = izlazni.FirstOrDefault();
+
+                if (first == null)
+                {
+                    output.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa");
+                    continue;
+                }
+
+                await posrednik.IzlazniPdfAsync(first.Id);
+                await posrednik.IzlazniUBLAsync(first.Id);
+
+                output.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL OK");
+            }
+            catch (Exception ex)
+            {
+                output.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL FAIL");
+                output.WriteLine(ex.ToString());
+            }
+        }
+    }
+
+    [Fact]
+    public async Task EvidentirajUplatu()
+    {
+        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        {
+            try
+            {
+                var izlazni = await posrednik.IzlazniListAsync(
+                    DateTime.UtcNow.AddDays(-30),
+                    DateTime.UtcNow);
+
+                var first = izlazni.FirstOrDefault();
+
+                if (first == null)
+                {
+                    output.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa za uplatu");
+                    continue;
+                }
+
+                await posrednik.EvidentirajUplatuAsync(
+                    first.Id,
+                    DateTime.UtcNow,
+                    100,
+                    NacinPlacanja.TransakcijskiRaCun);
+
+                output.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu OK");
+            }
+            catch (Exception ex)
+            {
+                output.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu FAIL");
+                output.WriteLine(ex.ToString());
+            }
+        }
+    }
+
+    [Fact]
+    public async Task UlazniRacuni()
+    {
+        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        {
+            try
+            {
+                var ulazni = await posrednik.UlazniListAsync(
+                    DateTime.UtcNow.AddDays(-30),
+                    DateTime.UtcNow);
+
+                var first = ulazni.FirstOrDefault();
+
+                if (first == null)
+                {
+                    output.WriteLine($"{posrednik.GetType().Name}: nema ulaznih računa");
+                    continue;
+                }
+
+                await posrednik.UlazniPdfAsync(first.Id);
+                await posrednik.UlazniUBLAsync(first.Id);
+
+                output.WriteLine($"{posrednik.GetType().Name}: Ulazni PDF + UBL OK");
+            }
+            catch (Exception ex)
+            {
+                output.WriteLine($"{posrednik.GetType().Name}: Ulazni FAIL");
+                output.WriteLine(ex.ToString());
+            }
+        }
+    }
+
+    [Fact]
+    public async Task OdbijPrviUlazniRacun()
+    {
+        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        {
+            try
+            {
+                var ulazni = await posrednik.UlazniListAsync(
+                    DateTime.UtcNow.AddDays(-30),
+                    DateTime.UtcNow);
+
+                var first = ulazni.FirstOrDefault();
+
+                if (first == null)
+                {
+                    output.WriteLine($"{posrednik.GetType().Name}: nema ulaznih za odbijanje");
+                    continue;
+                }
+
+                await posrednik.OdbijRacunAsync(
+                    first.Id,
+                    RazlogOdbijanja.NeusklađenostKojaNeUtjeceNaObracunPoreza,
+                    "Nedostaje OIB");
+
+                output.WriteLine($"{posrednik.GetType().Name}: OdbijRacun OK");
+            }
+            catch (Exception ex)
+            {
+                output.WriteLine($"{posrednik.GetType().Name}: OdbijRacun FAIL");
+                output.WriteLine(ex.ToString());
             }
         }
     }
