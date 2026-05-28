@@ -34,9 +34,14 @@ public abstract class Posrednik
     protected string BaseAddressDev { private get; set; } = "";
 
     /// <summary>
+    /// Događaj koji se pokreće nakon kreiranja HTTP klijenta unutar metode <see cref="SendRequest"/>. Omogućuje dodatnu konfiguraciju klijenta prije slanja zahtjeva.
+    /// </summary>
+    protected event EventHandler<ClientCreatedEventArgs>? OnClientCreated;
+
+    /// <summary>
     /// Aktivni URI servisa ovisno o odabranom okruženju.
     /// </summary>
-    protected string BaseAddress => IsDev ? BaseAddressDev : BaseAddressProd;
+    public string BaseAddress => IsDev ? BaseAddressDev : BaseAddressProd;
 
     /// <summary>
     /// Evidentira izlazni eRačun na temelju UBL sadržaja.
@@ -77,10 +82,7 @@ public abstract class Posrednik
     /// <param name="id">Identifikator računa.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>Sadržaj PDF dokumenta kao niz bajtova.</returns>
-    public virtual Task<byte[]> IzlazniPdfAsync(
-        string id,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Dohvaća UBL XML izlaznog računa.
@@ -88,24 +90,16 @@ public abstract class Posrednik
     /// <param name="id">Identifikator računa.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>UBL XML sadržaj računa.</returns>
-    public virtual Task<string> IzlazniUBLAsync(
-        string id,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task<string> IzlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
-    /// Odbija račun uz navedeni razlog i opis.
+    /// Odbija ulazni eRačun uz navedeni razlog i opis.
     /// </summary>
     /// <param name="id">Identifikator računa.</param>
     /// <param name="razlog">Razlog odbijanja.</param>
     /// <param name="opis">Dodatni opis odbijanja.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
-    public virtual Task OdbijRacunAsync(
-        string id,
-        RazlogOdbijanja razlog,
-        string opis,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Dohvaća popis ulaznih eRačuna unutar zadanog razdoblja.
@@ -131,6 +125,15 @@ public abstract class Posrednik
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>UBL XML sadržaj računa.</returns>
     public virtual Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+
+    /// <summary>
+    /// Prihvaća ulazni eRačun, označavajući ga kao zaprimljen ili odobren (ovisno o implementaciji posrednika).
+    /// </summary>
+    /// <param name="id">Identifikator računa.</param>
+    /// <param name="token">Token za otkazivanje operacije.</param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public virtual Task PrihvatiRacunAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Generička metoda za slanje HTTP zahtjeva prema posredniku. Koristi se unutar specifičnih implementacija posrednika za komunikaciju s njihovim API-jem.
@@ -162,21 +165,4 @@ public abstract class Posrednik
 
         return content;
     }
-
-    /// <summary>
-    /// Događaj koji se pokreće nakon kreiranja HTTP klijenta unutar metode <see cref="SendRequest"/>. Omogućuje dodatnu konfiguraciju klijenta prije slanja zahtjeva.
-    /// </summary>
-    protected event EventHandler<ClientCreatedEventArgs>? OnClientCreated;
-}
-
-/// <summary>
-/// Podaci događaja koji se prosljeđuju prilikom pokretanja događaja <see cref="Posrednik.OnClientCreated"/>. Sadrži referencu na kreirani <see cref="HttpClient"/> koji se koristi za slanje zahtjeva prema posredniku.
-/// </summary>
-/// <param name="client">Kreirani HTTP klijent.</param>
-public class ClientCreatedEventArgs(HttpClient client) : EventArgs
-{
-    /// <summary>
-    /// Kreirani HTTP klijent koji se koristi za komunikaciju s posrednikom. Dopušta dodatnu konfiguraciju (npr. dodavanje zaglavlja) prije slanja zahtjeva.
-    /// </summary>
-    public HttpClient Client { get; } = client;
 }

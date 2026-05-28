@@ -28,7 +28,7 @@ public class Doku : Posrednik
     }
 
     /// <summary>
-    /// Evidentira UBL dokument u Doku sustavu. Doku očekuje Base64 enkodirani XML sadržaj UBL-a unutar JSON objekta s ključem "xml".
+    /// Evidentira UBL dokument u Doku sustavu.
     /// </summary>
     /// <param name="ubl">UBL dokument.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
@@ -77,7 +77,7 @@ public class Doku : Posrednik
     }
 
     /// <summary>
-    /// Dohvaća UBL/XML sadržaj izlaznog računa. Doku vraća Base64 enkodirani XML sadržaj unutar JSON objekta s ključem "xml".
+    /// Dohvaća UBL/XML sadržaj izlaznog računa.
     /// </summary>
     /// <param name="id">ID izlaznog računa.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
@@ -147,7 +147,7 @@ public class Doku : Posrednik
     }
 
     /// <summary>
-    /// Dohvaća UBL/XML sadržaj ulaznog računa. Doku vraća Base64 enkodirani XML sadržaj.
+    /// Dohvaća UBL/XML sadržaj ulaznog računa.
     /// </summary>
     /// <param name="id">ID ulaznog računa.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>

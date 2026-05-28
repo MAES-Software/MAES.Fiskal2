@@ -35,26 +35,6 @@ public class MER : Posrednik
         BaseAddressDev = "https://demo.moj-eracun.hr";
     }
 
-    async Task<string> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
-    {
-        var client = new HttpClient
-        {
-            BaseAddress = new Uri(BaseAddress)
-        };
-
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        var req = new HttpRequestMessage(method, url);
-        if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-
-        var res = await client.SendAsync(req, token);
-        var json = await res.Content.ReadAsStringAsync();
-
-        if (!res.IsSuccessStatusCode) throw new HttpRequestException(json);
-        
-        return json;
-    }
-
     /// <summary>
     /// Šalje UBL/XML dokument izlaznog e-računa na Moj-eRačun servis.
     /// Dokument se validira i obrađuje, a u slučaju uspješnog slanja
@@ -62,7 +42,7 @@ public class MER : Posrednik
     /// </summary>
     /// <param name="ubl">UBL XML sadržaj e-računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await sendRequest(HttpMethod.Post, "/apis/v2/send", new
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await SendRequest(HttpMethod.Post, "/apis/v2/send", new
     {
         Username,
         Password,
@@ -76,7 +56,7 @@ public class MER : Posrednik
     /// </summary>
     /// <param name="id">Identifikator dokumenta.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override async Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default) => await sendRequest(HttpMethod.Post, $"/apis/v2/receive", new
+    public override async Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default) => await SendRequest(HttpMethod.Post, $"/apis/v2/receive", new
     {
         Username,
         Password,
@@ -146,7 +126,7 @@ public class MER : Posrednik
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
     {
-        await sendRequest(HttpMethod.Post, $"/api/fiscalization/markPaid", new
+        await SendRequest(HttpMethod.Post, $"/api/fiscalization/markPaid", new
         {
             Username,
             Password,
@@ -168,7 +148,7 @@ public class MER : Posrednik
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     public override async Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken cancellationToken = default)
     {
-        await sendRequest(HttpMethod.Post, $"/api/fiscalization/rejectWithoutElectronicID", new
+        await SendRequest(HttpMethod.Post, $"/api/fiscalization/rejectWithoutElectronicID", new
         {
             Username,
             Password,

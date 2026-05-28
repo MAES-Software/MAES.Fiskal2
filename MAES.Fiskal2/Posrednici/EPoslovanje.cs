@@ -24,6 +24,8 @@ public class EPoslovanje : Posrednik
     /// </summary>
     public string Password { get; set; } = "";
 
+    string apiKey = "";
+
     /// <summary>
     ///  Inicijalizira novog ePoslovanje posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
     /// </summary>
@@ -31,59 +33,40 @@ public class EPoslovanje : Posrednik
     {
         BaseAddressProd = "https://eracun.eposlovanje.hr";
         BaseAddressDev = "https://test.eposlovanje.hr";
-    }
-
-    HttpClient createClient()
-    {
-        var client = new HttpClient
+        OnClientCreated += async (s, e) =>
         {
-            BaseAddress = new Uri(BaseAddress)
-        };
-
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        return client;
-    }
-
-    async Task<string> apiKey()
-    {
-        using var client = createClient();
-
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/account/apikey")
-        {
-            Content = new StringContent(JsonSerializer.Serialize(new
+            if(string.IsNullOrWhiteSpace(apiKey))
             {
-                username = Username,
-                password = Password,
-                vatId = OIB,
-                softwareId = "MAES.Fiskal2"
-            }), Encoding.UTF8, "application/json")
+                var client = new HttpClient
+                {
+                    BaseAddress = new Uri(IsDev ? "https://test.eposlovanje.hr" : "https://eracun.eposlovanje.hr")
+                };
+
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/account/apikey")
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(new
+                    {
+                        username = Username,
+                        password = Password,
+                        vatId = OIB,
+                        softwareId = "MAES.Fiskal2"
+                    }), Encoding.UTF8, "application/json")
+                };
+
+                var response = await client.SendAsync(request);
+                var json = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                    throw new HttpRequestException(json);
+
+                using var doc = JsonDocument.Parse(json);
+                apiKey = doc.RootElement.GetProperty("apiKey").GetString()!;
+            }
+                
+            e.Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         };
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-            throw new HttpRequestException(json);
-
-        using var doc = JsonDocument.Parse(json);
-        return doc.RootElement.GetProperty("apiKey").GetString()!;
-    }
-
-    async Task<JsonDocument> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
-    {
-        using var client = createClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await apiKey());
-
-        var req = new HttpRequestMessage(method, url);
-        if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-
-        var res = await client.SendAsync(req, token);
-        var json = await res.Content.ReadAsStringAsync();
-
-        if (!res.IsSuccessStatusCode) throw new HttpRequestException(json);
-        
-        return JsonDocument.Parse(json);
     }
 
     async Task changeStatusAsync(string id, int status, string? note = null, double? partialPaymentAmount = null, CancellationToken token = default)
@@ -97,28 +80,29 @@ public class EPoslovanje : Posrednik
         if (!string.IsNullOrWhiteSpace(note)) body["note"] = note;
         if (partialPaymentAmount.HasValue) body["partialPaymentAmount"] = partialPaymentAmount.Value;
 
-        await sendRequest(HttpMethod.Post, $"/api/v2/document/changestatus/{id}", body, token);
+        await SendRequest(HttpMethod.Post, $"/api/v2/document/changestatus/{id}", body, token);
     }
 
     /// <summary>
     /// Dohvaća XML/UBL sadržaj ulaznog računa.
     /// </summary>
     public override async Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => 
-        (await sendRequest(HttpMethod.Get, $"/api/v2/document/get/{id}", null, token)).RootElement.GetProperty("document").GetString()!;
+        JsonDocument.Parse(await SendRequest(HttpMethod.Get, $"/api/v2/document/get/{id}", null, token)).RootElement.GetProperty("document").GetString()!;
 
     /// <summary>
     /// Dohvaća PDF sadržaj ulaznog računa.
     /// </summary>
     public override async Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) =>
-        Convert.FromBase64String((await sendRequest(HttpMethod.Get, $"/api/v2/document/visualization/{id}", null, token)).RootElement.GetProperty("pdf").GetString()!);
+        Convert.FromBase64String(JsonDocument.Parse(await SendRequest(HttpMethod.Get, $"/api/v2/document/visualization/{id}", null, token)).RootElement.GetProperty("pdf").GetString()!);
 
     /// <summary>
     /// Dohvaća popis ulaznih e-računa.
     /// </summary>
     public override async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
     {
-        var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/incoming?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
-        
+        var content = await SendRequest(HttpMethod.Get, $"/api/v2/document/incoming?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+        var doc = JsonDocument.Parse(content);
+
         var list = new List<UlazniERacun>();
 
         foreach (var item in doc.RootElement.EnumerateArray())
@@ -157,7 +141,8 @@ public class EPoslovanje : Posrednik
     DateTime to,
     CancellationToken token = default)
     {
-        var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/outgoing?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+        var content = await SendRequest(HttpMethod.Get, $"/api/v2/document/outgoing?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+        var doc = JsonDocument.Parse(content);
 
         var list = new List<IzlazniERacun>();
 
@@ -180,7 +165,7 @@ public class EPoslovanje : Posrednik
     /// <summary>
     /// Evidentira UBL dokument u ePoslovanje sustav.
     /// </summary>
-    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default) => await sendRequest(HttpMethod.Post, "/api/v2/document/send", new
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default) => await SendRequest(HttpMethod.Post, "/api/v2/document/send", new
     {
         document = ubl,
         softwareId = "MAES.Blagajna"
