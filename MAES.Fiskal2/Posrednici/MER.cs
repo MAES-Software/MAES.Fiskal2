@@ -31,15 +31,15 @@ public class MER : Posrednik
     /// </summary>
     public MER()
     {
-        UriProd = "https://www.moj-eracun.hr";
-        UriDev = "https://demo.moj-eracun.hr";
+        BaseAddressProd = "https://www.moj-eracun.hr";
+        BaseAddressDev = "https://demo.moj-eracun.hr";
     }
 
     async Task<string> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
     {
         var client = new HttpClient
         {
-            BaseAddress = new Uri(Uri)
+            BaseAddress = new Uri(BaseAddress)
         };
 
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

@@ -19,45 +19,60 @@ public class Doku : Posrednik
     /// </summary>
     public Doku()
     {
-        UriProd = "https://api.doku.hr";
-        UriDev = "https://api-test.doku.hr";
+        BaseAddressProd = "https://api.doku.hr";
+        BaseAddressDev = "https://api-test.doku.hr";
+        OnClientCreated += (s, e) =>
+        {
+            e.Client.DefaultRequestHeaders.TryAddWithoutValidation("DOKU-API-KEY", ApiKey);
+        };
     }
 
     /// <summary>
     /// Evidentira UBL dokument u Doku sustavu. Doku očekuje Base64 enkodirani XML sadržaj UBL-a unutar JSON objekta s ključem "xml".
     /// </summary>
     /// <param name="ubl"></param>
-    /// <param name="token"></param>
+    /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns></returns>
     /// <exception cref="HttpRequestException"></exception>
     public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)
     {
-        await sendRequest(HttpMethod.Post, "/documents/invoices/outgoing/upload?publicLink=false", new
+        await SendRequest(HttpMethod.Post, "/documents/invoices/outgoing/upload", new
         {
             xml = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl))
         }, token);
     }
 
-    async Task<string> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
+    /// <summary>
+    /// Dohvaća listu izlaznih e-računa za zadano razdoblje.
+    /// </summary>
+    /// <param name="from">Datum početka razdoblja.</param>
+    /// <param name="to">Datum kraja razdoblja.</param>
+    /// <param name="token">Token za otkazivanje operacije.</param>
+    /// <returns></returns>
+    public override async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
     {
-        using var client = new HttpClient
+        var res = await SendRequest(HttpMethod.Get, $"/documents/invoices/outgoing?IssueDateFrom={from:O}&IssueDateTo={to:O}", null, token);
+        var doc = JsonDocument.Parse(res);
+        
+        var list = new List<IzlazniERacun>();
+        foreach (var item in doc.RootElement.GetProperty("records").EnumerateArray())
         {
-            BaseAddress = new Uri(Uri)
-        };
-
-        client.DefaultRequestHeaders.TryAddWithoutValidation("DOKU-API-KEY", ApiKey);
-
-        using var request = new HttpRequestMessage(method, url)
-        {
-            Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
-        };
-
-        using var response = await client.SendAsync(request, token);
-
-        var responseBody = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException(responseBody);
-
-        return responseBody;
+            list.Add(new IzlazniERacun
+            {
+                Id = item.GetProperty("id").GetInt64().ToString(),
+                Broj = item.GetProperty("name").GetString()!,
+                Datum = item.GetProperty("issueDate").GetDateTime(),
+                PartnerNaziv = item.GetProperty("receiver").GetProperty("name").GetString()!,
+                PartnerOIB = item.GetProperty("receiver").GetProperty("oib").GetString()!,
+                Status = item.GetProperty("status").GetString() switch // <-- ovo treba popravit
+                {
+                    "DRAFT" => IzlazniERacunStatus.Nacrt,
+                    "SENT" => IzlazniERacunStatus.Poslano,
+                    "REJECTED" => IzlazniERacunStatus.Odbijeno,
+                    _ => IzlazniERacunStatus.Dostavljeno
+                }
+            });
+        }
+        return list;
     }
 }

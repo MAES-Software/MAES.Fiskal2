@@ -31,14 +31,14 @@ public class Super : Posrednik
     /// </summary>
     public Super()
     {
-        UriProd = "https://api.super.hr/";
-        UriDev = "https://apitest.super.hr/";
+        BaseAddressProd = "https://api.super.hr/";
+        BaseAddressDev = "https://apitest.super.hr/";
     }
 
     async Task<JsonDocument> postRequest(string uri, Dictionary<string, string> body, CancellationToken cancellationToken)
     {
         using var client = new HttpClient();
-        client.BaseAddress = new Uri(Uri);
+        client.BaseAddress = new Uri(BaseAddress);
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
         if (token == null || DateTime.UtcNow >= token.Value.Value)

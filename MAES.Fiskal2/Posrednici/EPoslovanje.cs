@@ -29,15 +29,15 @@ public class EPoslovanje : Posrednik
     /// </summary>
     public EPoslovanje()
     {
-        UriProd = "https://eracun.eposlovanje.hr";
-        UriDev = "https://test.eposlovanje.hr";
+        BaseAddressProd = "https://eracun.eposlovanje.hr";
+        BaseAddressDev = "https://test.eposlovanje.hr";
     }
 
     HttpClient createClient()
     {
         var client = new HttpClient
         {
-            BaseAddress = new Uri(Uri)
+            BaseAddress = new Uri(BaseAddress)
         };
 
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));

@@ -25,8 +25,8 @@ public class Fina : Posrednik
     /// </summary>
     public Fina()
     {
-        UriProd = "https://eracun.fina.hr/eracun-b2b/services/eRacunB2BPortType";
-        UriDev = "https://eracun-test.fina.hr/eracun-b2b/services/eRacunB2BPortType";
+        BaseAddressProd = "https://eracun.fina.hr/eracun-b2b/services/eRacunB2BPortType";
+        BaseAddressDev = "https://eracun-test.fina.hr/eracun-b2b/services/eRacunB2BPortType";
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ public class Fina : Posrednik
             }
         };
 
-        using var client = new eRacunB2BPortTypeClient(eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, Uri);
+        using var client = new eRacunB2BPortTypeClient(eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, BaseAddress);
 
         var res = await client.sendB2BOutgoingInvoiceAsync(msg);
 
@@ -182,7 +182,7 @@ public class Fina : Posrednik
                ?? throw new InvalidOperationException("UBL nema BuyerID.");
     }
 
-    eRacunB2BPortTypeClient CreateClient() => new (eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, Uri);
+    eRacunB2BPortTypeClient CreateClient() => new (eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, BaseAddress);
 
     HeaderSupplierType Header() => new()
     {
