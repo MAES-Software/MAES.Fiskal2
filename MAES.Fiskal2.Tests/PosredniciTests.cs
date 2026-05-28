@@ -4,7 +4,7 @@ using Xunit.Abstractions;
 
 namespace MAES.Fiskal2.Tests;
 
-public class PosredniciTests(ITestOutputHelper output)
+public class PosredniciTests
 {
     readonly List<Posrednik> posrednici =
     [
@@ -37,12 +37,12 @@ public class PosredniciTests(ITestOutputHelper output)
             try
             {
                 await posrednik.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
-                output.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL OK");
+                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL OK");
             }
             catch (Exception ex)
             {
-                output.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL FAIL");
-                output.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL FAIL");
+                Console.WriteLine(ex.ToString());
             }
         }
     }
@@ -58,12 +58,12 @@ public class PosredniciTests(ITestOutputHelper output)
                     DateTime.UtcNow.AddDays(-30),
                     DateTime.UtcNow);
 
-                output.WriteLine($"{posrednik.GetType().Name}: IzlazniList OK ({izlazni.Count()})");
+                Console.WriteLine($"{posrednik.GetType().Name}: IzlazniList OK ({izlazni.Count()})");
             }
             catch (Exception ex)
             {
-                output.WriteLine($"{posrednik.GetType().Name}: IzlazniList FAIL");
-                output.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: IzlazniList FAIL");
+                Console.WriteLine(ex.ToString());
             }
         }
     }
@@ -83,19 +83,19 @@ public class PosredniciTests(ITestOutputHelper output)
 
                 if (first == null)
                 {
-                    output.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa");
+                    Console.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa");
                     continue;
                 }
 
                 await posrednik.IzlazniPdfAsync(first.Id);
                 await posrednik.IzlazniUBLAsync(first.Id);
 
-                output.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL OK");
+                Console.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL OK");
             }
             catch (Exception ex)
             {
-                output.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL FAIL");
-                output.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL FAIL");
+                Console.WriteLine(ex.ToString());
             }
         }
     }
@@ -115,7 +115,7 @@ public class PosredniciTests(ITestOutputHelper output)
 
                 if (first == null)
                 {
-                    output.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa za uplatu");
+                    Console.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa za uplatu");
                     continue;
                 }
 
@@ -125,12 +125,12 @@ public class PosredniciTests(ITestOutputHelper output)
                     100,
                     NacinPlacanja.TransakcijskiRaCun);
 
-                output.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu OK");
+                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu OK");
             }
             catch (Exception ex)
             {
-                output.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu FAIL");
-                output.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu FAIL");
+                Console.WriteLine(ex.ToString());
             }
         }
     }
@@ -150,19 +150,19 @@ public class PosredniciTests(ITestOutputHelper output)
 
                 if (first == null)
                 {
-                    output.WriteLine($"{posrednik.GetType().Name}: nema ulaznih računa");
+                    Console.WriteLine($"{posrednik.GetType().Name}: nema ulaznih računa");
                     continue;
                 }
 
                 await posrednik.UlazniPdfAsync(first.Id);
                 await posrednik.UlazniUBLAsync(first.Id);
 
-                output.WriteLine($"{posrednik.GetType().Name}: Ulazni PDF + UBL OK");
+                Console.WriteLine($"{posrednik.GetType().Name}: Ulazni PDF + UBL OK");
             }
             catch (Exception ex)
             {
-                output.WriteLine($"{posrednik.GetType().Name}: Ulazni FAIL");
-                output.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: Ulazni FAIL");
+                Console.WriteLine(ex.ToString());
             }
         }
     }
@@ -182,7 +182,7 @@ public class PosredniciTests(ITestOutputHelper output)
 
                 if (first == null)
                 {
-                    output.WriteLine($"{posrednik.GetType().Name}: nema ulaznih za odbijanje");
+                    Console.WriteLine($"{posrednik.GetType().Name}: nema ulaznih za odbijanje");
                     continue;
                 }
 
@@ -191,12 +191,12 @@ public class PosredniciTests(ITestOutputHelper output)
                     RazlogOdbijanja.NeusklađenostKojaNeUtjeceNaObracunPoreza,
                     "Nedostaje OIB");
 
-                output.WriteLine($"{posrednik.GetType().Name}: OdbijRacun OK");
+                Console.WriteLine($"{posrednik.GetType().Name}: OdbijRacun OK");
             }
             catch (Exception ex)
             {
-                output.WriteLine($"{posrednik.GetType().Name}: OdbijRacun FAIL");
-                output.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: OdbijRacun FAIL");
+                Console.WriteLine(ex.ToString());
             }
         }
     }
