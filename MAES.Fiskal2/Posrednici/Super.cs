@@ -233,7 +233,7 @@ public class Super : Posrednik
          }, cancellationToken);
     }
 
-    async Task<JsonDocument> postRequestAsync(string uri, Dictionary<string, string> data, CancellationToken cancellationToken = default)
+    async Task<JsonDocument> postRequestAsync2(string uri, Dictionary<string, string> data, CancellationToken cancellationToken = default)
     {
         data.Add("MessageId", Guid.NewGuid().ToString());
         data.Add("CompanyGuid", BusinessGuid);
@@ -244,5 +244,43 @@ public class Super : Posrednik
         if(doc.RootElement.TryGetProperty("errorMessage", out var el) && el.GetString() is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage)) throw new Exception(errorMessage);
 
         return doc;
+    }
+
+    async Task<JsonDocument> postRequestAsync(string uri, Dictionary<string, string> body, CancellationToken cancellationToken = default)
+    {
+        using var client = new HttpClient();
+        client.BaseAddress = new Uri(BaseAddress);
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        if (token == null || DateTime.UtcNow >= token.Value.Value)
+        {
+            using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
+            tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "password", ["username"] = Username, ["password"] = Password });
+
+            var tokenContent = await SendRequest2(tokenRequest, cancellationToken);
+
+            using var doc = JsonDocument.Parse(tokenContent);
+
+            token = new KeyValuePair<string, DateTime>(
+                doc.RootElement.GetProperty("access_token").GetString()!,
+                DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32() - 60)
+            );
+        }
+
+        body.Add("MessageId", Guid.NewGuid().ToString());
+        body.Add("CompanyGuid", BusinessGuid);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token!.Value.Key);
+        request.Content = new FormUrlEncodedContent(body);
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+
+        var content = await SendRequest2(request, cancellationToken);
+
+        var jsonDocument = JsonDocument.Parse(content);
+        if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
+        return jsonDocument;
     }
 }

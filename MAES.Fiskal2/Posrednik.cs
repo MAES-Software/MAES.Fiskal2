@@ -165,4 +165,24 @@ public abstract class Posrednik
 
         return content;
     }
+
+    /// <summary>
+    /// Alternativna metoda za slanje HTTP zahtjeva koja prima već pripremljeni <see cref="HttpRequestMessage"/>. Omogućuje veću fleksibilnost u konfiguraciji zahtjeva, poput postavljanja prilagođenih zaglavlja ili tijela koje nije JSON.
+    /// </summary>
+    /// <param name="request">Pripremljeni HTTP zahtjev.</param>
+    /// <param name="token">Token za otkazivanje operacije.</param>
+    /// <returns>Sadržaj odgovora kao niz znakova.</returns>
+    /// <exception cref="HttpRequestException"></exception>
+    protected async Task<string> SendRequest2(HttpRequestMessage request, CancellationToken token = default)
+    {
+        using var client = new HttpClient { BaseAddress = new Uri(BaseAddress) };
+
+        using var response = await client.SendAsync(request, token);
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException(content);
+
+        return content;
+    }
 }
