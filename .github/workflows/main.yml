@@ -19,6 +19,7 @@ jobs:
       SUPER_PASSWORD: ${{ secrets.SUPER_PASSWORD }}
       EPOSLOVANJE_USERNAME: ${{ secrets.EPOSLOVANJE_USERNAME }}
       EPOSLOVANJE_PASSWORD: ${{ secrets.EPOSLOVANJE_PASSWORD }}
+      EPOSLOVANJE_API_KEY: ${{ secrets.EPOSLOVANJE_API_KEY }}
       DOKU_API_KEY: ${{ secrets.DOKU_API_KEY }}
 
     steps:

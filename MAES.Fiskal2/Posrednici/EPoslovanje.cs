@@ -24,6 +24,11 @@ public class EPoslovanje : Posrednik
     /// </summary>
     public string Password { get; set; } = "";
 
+    /// <summary>
+    /// API ključ za autentifikaciju.
+    /// </summary>
+    public string ApiKey { get; set; } = "";
+
     string apiKey = "";
 
     /// <summary>
