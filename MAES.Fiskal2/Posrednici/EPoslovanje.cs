@@ -178,7 +178,7 @@ public class EPoslovanje : Posrednik
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
         await checkApiKeyAsync();
-        request.Headers.Add("ApiKeyAuth", apiKey);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
         await SendRequest2(request, token);
         // await SendRequest(HttpMethod.Post, "/api/v2/document/send", new
