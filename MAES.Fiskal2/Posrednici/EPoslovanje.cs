@@ -164,11 +164,29 @@ public class EPoslovanje : Posrednik
     /// <summary>
     /// Evidentira UBL dokument u ePoslovanje sustav.
     /// </summary>
-    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default) => await SendRequest(HttpMethod.Post, "/api/v2/document/send", new
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)
     {
-        document = ubl,
-        softwareId = "MAES.Blagajna"
-    }, token);
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/document/send")
+        {
+            Content = new StringContent(JsonSerializer.Serialize(new
+            {
+                document = ubl,
+                softwareId = "MAES.Blagajna"
+            }), Encoding.UTF8, "application/json")
+        };
+
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        await checkApiKeyAsync();
+        request.Headers.Add("ApiKeyAuth", apiKey);
+
+        await SendRequest2(request, token);
+        // await SendRequest(HttpMethod.Post, "/api/v2/document/send", new
+        // {
+        //     document = ubl,
+        //     softwareId = "MAES.Blagajna"
+        // }, token);
+    }
 
     /// <summary>
     /// Evidentira uplatu za račun.
@@ -184,4 +202,32 @@ public class EPoslovanje : Posrednik
     /// </summary>
     public override Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) =>
         changeStatusAsync(id, status: 6, $"{razlog}: {opis}", token: token);
+
+    async Task checkApiKeyAsync()
+    {
+        if(string.IsNullOrWhiteSpace(apiKey))
+        {
+            var client = new HttpClient
+            {
+                BaseAddress = new Uri(BaseAddress)
+            };
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/account/apikey")
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new
+                {
+                    username = Username,
+                    password = Password,
+                    vatId = OIB,
+                    softwareId = "MAES.Fiskal2"
+                }), Encoding.UTF8, "application/json")
+            };
+            var response = await client.SendAsync(request);
+            var json = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+                throw new HttpRequestException(json);
+            using var doc = JsonDocument.Parse(json);
+            apiKey = doc.RootElement.GetProperty("apiKey").GetString()!;
+        }
+    }
 }
