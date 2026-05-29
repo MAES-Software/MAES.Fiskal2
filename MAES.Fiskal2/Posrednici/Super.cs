@@ -33,34 +33,6 @@ public class Super : Posrednik
     {
         BaseAddressProd = "https://api.super.hr/";
         BaseAddressDev = "https://apitest.super.hr/";
-        OnClientCreated += async (s, e) =>
-        {
-            if (token == null || DateTime.UtcNow >= token.Value.Value)
-            {
-                using var client = new HttpClient();
-                client.BaseAddress = new Uri(BaseAddress);
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-                using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
-                tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "password", ["username"] = Username, ["password"] = Password });
-
-                var tokenResponse = await client.SendAsync(tokenRequest);
-
-                if (!tokenResponse.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom dohvaćanja tokena");
-
-                using var doc = JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync());
-
-                token = new KeyValuePair<string, DateTime>(
-                    doc.RootElement.GetProperty("access_token").GetString()!,
-                    DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32() - 60)
-                );
-            }
-
-            e.Client.DefaultRequestHeaders.TryAddWithoutValidation("Bearer", token.Value.Key);
-            if(!e.Client.DefaultRequestHeaders.Contains("Content-Type")) e.Client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/x-www-form-urlencoded");
-            if(!e.Client.DefaultRequestHeaders.Contains("Accept")) e.Client.DefaultRequestHeaders.TryAddWithoutValidation("Accept", "application/json");
-        };
     }
 
     /// <summary>
@@ -248,10 +220,7 @@ public class Super : Posrednik
 
     async Task<JsonDocument> postRequestAsync(string uri, Dictionary<string, string> body, CancellationToken cancellationToken = default)
     {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri(BaseAddress);
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
+        // dohvati token ako ga nema ili je istekao
         if (token == null || DateTime.UtcNow >= token.Value.Value)
         {
             using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
@@ -273,7 +242,7 @@ public class Super : Posrednik
 
         using var request = new HttpRequestMessage(HttpMethod.Post, uri);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token!.Value.Key);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Value.Key);
         request.Content = new FormUrlEncodedContent(body);
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 

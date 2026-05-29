@@ -64,7 +64,7 @@ public class EPoslovanje : Posrednik
                 using var doc = JsonDocument.Parse(json);
                 apiKey = doc.RootElement.GetProperty("apiKey").GetString()!;
             }
-            e.Client.DefaultRequestHeaders.Add("Authorization", apiKey);
+            e.Client.DefaultRequestHeaders.Add("ApiKeyAuth", apiKey);
         };
     }
 
