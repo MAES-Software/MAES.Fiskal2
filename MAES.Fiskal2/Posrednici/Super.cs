@@ -29,11 +29,7 @@ public class Super : Posrednik
     /// <summary>
     /// Inicijalizira novog Super posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
     /// </summary>
-    public Super()
-    {
-        BaseAddressProd = "https://api.super.hr/";
-        BaseAddressDev = "https://apitest.super.hr/";
-    }
+    public Super() : base("https://api.super.hr/", "https://apitest.super.hr/") { }
 
     /// <summary>
     /// Dohvaća XML/UBL sadržaj ulaznog računa po njegovom identifikatoru.
@@ -146,7 +142,7 @@ public class Super : Posrednik
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
 
-        return doc.RootElement.GetProperty("invoices").EnumerateArray().Select(x => new IzlazniERacun
+        return doc.RootElement.GetProperty("sendingInvoices").EnumerateArray().Select(x => new IzlazniERacun
         {
             Broj = x.GetProperty("UniqueId").GetString() ?? "",
             Datum = x.GetProperty("IssueDate").GetDateTime(),
@@ -205,19 +201,6 @@ public class Super : Posrednik
          }, cancellationToken);
     }
 
-    async Task<JsonDocument> postRequestAsync2(string uri, Dictionary<string, string> data, CancellationToken cancellationToken = default)
-    {
-        data.Add("MessageId", Guid.NewGuid().ToString());
-        data.Add("CompanyGuid", BusinessGuid);
-
-        var content = await SendRequest(HttpMethod.Post, uri, data, cancellationToken);
-        var doc = JsonDocument.Parse(content);
-
-        if(doc.RootElement.TryGetProperty("errorMessage", out var el) && el.GetString() is string errorMessage && !string.IsNullOrWhiteSpace(errorMessage)) throw new Exception(errorMessage);
-
-        return doc;
-    }
-
     async Task<JsonDocument> postRequestAsync(string uri, Dictionary<string, string> body, CancellationToken cancellationToken = default)
     {
         // dohvati token ako ga nema ili je istekao
@@ -227,7 +210,7 @@ public class Super : Posrednik
             tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "password", ["username"] = Username, ["password"] = Password });
 
-            var tokenContent = await SendRequest2(tokenRequest, cancellationToken);
+            var tokenContent = await SendRequest(tokenRequest, cancellationToken);
 
             using var doc = JsonDocument.Parse(tokenContent);
 
@@ -246,7 +229,7 @@ public class Super : Posrednik
         request.Content = new FormUrlEncodedContent(body);
         request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
-        var content = await SendRequest2(request, cancellationToken);
+        var content = await SendRequest(request, cancellationToken);
 
         var jsonDocument = JsonDocument.Parse(content);
         if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);

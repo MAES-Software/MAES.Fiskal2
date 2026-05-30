@@ -17,9 +17,6 @@ public class PosredniciTests
         },
         new EPoslovanje
         {
-            OIB = "51560545524",
-            Username = Environment.GetEnvironmentVariable("EPOSLOVANJE_USERNAME") ?? throw new InvalidOperationException("EPOSLOVANJE_USERNAME environment variable is not set."),
-            Password = Environment.GetEnvironmentVariable("EPOSLOVANJE_PASSWORD") ?? throw new InvalidOperationException("EPOSLOVANJE_PASSWORD environment variable is not set."),
             ApiKey = Environment.GetEnvironmentVariable("EPOSLOVANJE_API_KEY") ?? throw new InvalidOperationException("EPOSLOVANJE_API_KEY environment variable is not set."),
             IsDev = true
         },
@@ -33,17 +30,18 @@ public class PosredniciTests
     [Fact]
     public async Task EvidentirajUBL()
     {
+        var ubl = File.ReadAllText("ubl.xml");
+
         foreach (var posrednik in posrednici.Where(p => p is not Fina))
         {
             try
             {
-                await posrednik.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
+                await posrednik.EvidentirajUBLAsync(ubl);
                 Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL OK");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL FAIL");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL FAIL {ex.Message}");
             }
         }
     }
@@ -63,8 +61,7 @@ public class PosredniciTests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{posrednik.GetType().Name}: IzlazniList FAIL");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: IzlazniList FAIL {ex.Message}");
             }
         }
     }
@@ -95,8 +92,7 @@ public class PosredniciTests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL FAIL");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL FAIL {ex.Message}");
             }
         }
     }
@@ -130,8 +126,7 @@ public class PosredniciTests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu FAIL");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu FAIL {ex.Message}");
             }
         }
     }
@@ -162,8 +157,7 @@ public class PosredniciTests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{posrednik.GetType().Name}: Ulazni FAIL");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: Ulazni PDF + UBL FAIL {ex.Message}");
             }
         }
     }
@@ -196,8 +190,7 @@ public class PosredniciTests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{posrednik.GetType().Name}: OdbijRacun FAIL");
-                Console.WriteLine(ex.ToString());
+                Console.WriteLine($"{posrednik.GetType().Name}: OdbijRacun FAIL {ex.Message}");
             }
         }
     }

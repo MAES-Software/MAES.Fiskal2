@@ -12,7 +12,7 @@ public class TER : Posrednik
     /// <summary>
     /// Konstruktor za inicijalizaciju TER posrednika.
     /// </summary>
-    public TER()
+    public TER() : base("", "")
     {
         //UriProd = "https://api.ter.hr";
         //UriDev = "https://api-test.ter.hr";

@@ -17,15 +17,7 @@ public class Doku : Posrednik
     /// <summary>
     /// Konstruktor za inicijalizaciju Doku posrednika.
     /// </summary>
-    public Doku()
-    {
-        BaseAddressProd = "https://api.doku.hr";
-        BaseAddressDev = "https://api-test.doku.hr";
-        OnClientCreated += (s, e) =>
-        {
-            e.Client.DefaultRequestHeaders.TryAddWithoutValidation("SOFTWARE-API-TOKEN", ApiKey);
-        };
-    }
+    public Doku() : base("https://api.doku.hr", "https://api-test.doku.hr") { }
 
     /// <summary>
     /// Evidentira UBL dokument u Doku sustavu.
@@ -36,7 +28,7 @@ public class Doku : Posrednik
     /// <exception cref="HttpRequestException"></exception>
     public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)
     {
-        await SendRequest(HttpMethod.Post, "/documents/invoices/outgoing/upload", new
+        await sendRequest(HttpMethod.Post, "/documents/invoices/outgoing/upload", new
         {
             xml = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl))
         }, token);
@@ -51,7 +43,7 @@ public class Doku : Posrednik
     /// <returns>Lista izlaznih e-računa.</returns>
     public override async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
     {
-        var res = await SendRequest(HttpMethod.Get, $"/documents/invoices/outgoing?IssueDateFrom={from:O}&IssueDateTo={to:O}", null, token);
+        var res = await sendRequest(HttpMethod.Get, $"/documents/invoices/outgoing?IssueDateFrom={from:O}&IssueDateTo={to:O}", null, token);
         var doc = JsonDocument.Parse(res);
         
         var list = new List<IzlazniERacun>();
@@ -84,7 +76,7 @@ public class Doku : Posrednik
     /// <returns>Base64 enkodirani XML sadržaj izlaznog računa.</returns>
     public override async Task<string> IzlazniUBLAsync(string id, CancellationToken token = default)
     {
-        var content = await SendRequest(HttpMethod.Get, $"/documents/invoices/outgoing/{id}/download?format=ubl", null, token);
+        var content = await sendRequest(HttpMethod.Get, $"/documents/invoices/outgoing/{id}/download?format=ubl", null, token);
         var doc = JsonDocument.Parse(content);
         return doc.RootElement.GetProperty("data").GetProperty("xml").GetString()!;
     }
@@ -100,7 +92,7 @@ public class Doku : Posrednik
     /// <returns></returns>
     public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default)
     {
-        await SendRequest(HttpMethod.Post, $"/documents/invoices/outgoing/{id}/payments", new
+        await sendRequest(HttpMethod.Post, $"/documents/invoices/outgoing/{id}/payments", new
         {
             datumNaplate = date,
             naplaceniIznos = amount,
@@ -122,7 +114,7 @@ public class Doku : Posrednik
     /// <returns>Lista ulaznih e-računa.</returns>
     public override async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
     {
-        var content = await SendRequest(HttpMethod.Get, $"/documents/invoices/incoming?IssueDateFrom={from:O}&IssueDateTo={to:O}", null, token);
+        var content = await sendRequest(HttpMethod.Get, $"/documents/invoices/incoming?IssueDateFrom={from:O}&IssueDateTo={to:O}", null, token);
         var doc = JsonDocument.Parse(content);
         var list = new List<UlazniERacun>();
         foreach (var item in doc.RootElement.GetProperty("records").EnumerateArray())
@@ -136,7 +128,7 @@ public class Doku : Posrednik
                 PartnerOIB = item.GetProperty("sender").GetProperty("oib").GetString()!,
                 Status = item.GetProperty("status").GetString() switch
                 {
-                    "RECIVED" => UlazniERacunStatus.Zaprimljeno, // <-- ovo treba popravit mozda treba pogledat dokumentaciju
+                    "RECEIVED" => UlazniERacunStatus.Zaprimljeno, // <-- ovo treba popravit mozda treba pogledat dokumentaciju
                     "APPROVED" => UlazniERacunStatus.Odobreno,
                     "REJECTED" => UlazniERacunStatus.Odbijeno,
                     _ => UlazniERacunStatus.Likvidirano
@@ -154,7 +146,7 @@ public class Doku : Posrednik
     /// <returns>Base64 enkodirani XML sadržaj ulaznog računa.</returns>
     public override async Task<string> UlazniUBLAsync(string id, CancellationToken token = default)
     {
-        var content = await SendRequest(HttpMethod.Get, $"/documents/invoices/incoming/{id}/export", null, token);
+        var content = await sendRequest(HttpMethod.Get, $"/documents/invoices/incoming/{id}/export", null, token);
         var doc = JsonDocument.Parse(content);
         return doc.RootElement.GetProperty("data").GetProperty("xml").GetString()!;
     }
@@ -169,7 +161,7 @@ public class Doku : Posrednik
     /// <returns></returns> 
     public override async Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default)
     {
-        await SendRequest(HttpMethod.Post, $"/documents/invoices/incoming/{id}/reject", new
+        await sendRequest(HttpMethod.Post, $"/documents/invoices/incoming/{id}/reject", new
         {
             datumOdbijanja = DateTime.Now.ToString("yyyy-MM-dd"),
             vrstaRazlogaOdbijanja = razlog switch
@@ -180,5 +172,21 @@ public class Doku : Posrednik
             },
             razlogOdbijanja = opis
         }, token);
+    }
+
+    async Task<string> sendRequest(HttpMethod method, string uri, object? body = null, CancellationToken token = default)
+    {
+        var request = new HttpRequestMessage(method, uri)
+        {
+            Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
+        };
+
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        request.Headers.TryAddWithoutValidation("SOFTWARE-API-TOKEN", ApiKey);
+        
+        request.Headers.TryAddWithoutValidation("Authorization", ApiKey);
+
+        return await SendRequest(request, token);
     }
 }
