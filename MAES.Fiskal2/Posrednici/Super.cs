@@ -29,53 +29,7 @@ public class Super : Posrednik
     /// <summary>
     /// Inicijalizira novog Super posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
     /// </summary>
-    public Super()
-    {
-        UriProd = "https://api.super.hr/";
-        UriDev = "https://apitest.super.hr/";
-    }
-
-    async Task<JsonDocument> postRequest(string uri, Dictionary<string, string> body, CancellationToken cancellationToken)
-    {
-        using var client = new HttpClient();
-        client.BaseAddress = new Uri(Uri);
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        if (token == null || DateTime.UtcNow >= token.Value.Value)
-        {
-            using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
-            tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "password", ["username"] = Username, ["password"] = Password });
-
-            var tokenResponse = await client.SendAsync(tokenRequest, cancellationToken);
-
-            if (!tokenResponse.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom dohvaćanja tokena");
-
-            using var doc = JsonDocument.Parse(await tokenResponse.Content.ReadAsStringAsync());
-
-            token = new KeyValuePair<string, DateTime>(
-                doc.RootElement.GetProperty("access_token").GetString()!,
-                DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32() - 60)
-            );
-        }
-
-        body.Add("MessageId", Guid.NewGuid().ToString());
-        body.Add("CompanyGuid", BusinessGuid);
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, uri);
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token!.Value.Key);
-        request.Content = new FormUrlEncodedContent(body);
-        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-
-        var response = await client.SendAsync(request, cancellationToken);
-
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException($"Greška prilikom slanja zahtjeva: {uri}");
-
-        var jsonDocument = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
-        return jsonDocument;
-    }
+    public Super() : base("https://api.super.hr/", "https://apitest.super.hr/") { }
 
     /// <summary>
     /// Dohvaća XML/UBL sadržaj ulaznog računa po njegovom identifikatoru.
@@ -85,12 +39,12 @@ public class Super : Posrednik
     /// <returns>XML/UBL sadržaj računa kao tekst.</returns>
     public override async Task<string> UlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
-        var jDoc = await postRequest("api/Invoice/GetInvoice", new Dictionary<string, string>
+        var doc = await postRequestAsync("api/Invoice/GetInvoice", new Dictionary<string, string>
         {
             ["Guid"] = id.ToString()
         }, cancellationToken);
 
-        if (!jDoc.RootElement.TryGetProperty("invoiceUbl", out var el)) throw new Exception("UBL not found in response");
+        if (!doc.RootElement.TryGetProperty("invoiceUbl", out var el)) throw new Exception("UBL not found in response");
         return Encoding.UTF8.GetString(Convert.FromBase64String(el.GetString()));
     }
 
@@ -100,7 +54,7 @@ public class Super : Posrednik
     /// <param name="id">Identifikator ulaznog računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     /// <returns>PDF sadržaj računa kao bajtni niz.</returns>
-    public override async Task<byte[]> UlazniPdfAsync(string id, CancellationToken cancellationToken = default) => Convert.FromBase64String((await postRequest("api/Invoice/GetInvoiceDetailVisualization", new Dictionary<string, string>
+    public override async Task<byte[]> UlazniPdfAsync(string id, CancellationToken cancellationToken = default) => Convert.FromBase64String((await postRequestAsync("api/Invoice/GetInvoiceDetailVisualization", new Dictionary<string, string>
     {
         ["Guid"] = id.ToString()
     }, cancellationToken)).RootElement.GetProperty("invoiceDetailVisualization").GetString()!);
@@ -114,13 +68,13 @@ public class Super : Posrednik
     /// <returns>Popis ulaznih e-računa.</returns>
     public override async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
     {
-        var jsonDocument = await postRequest("api/Invoice/GetInvoiceList", new Dictionary<string, string>
+        var doc = await postRequestAsync("api/Invoice/GetInvoiceList", new Dictionary<string, string>
         {
             ["DateFrom"] = from.ToString("yyyy-MM-dd"),
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
 
-        return jsonDocument.RootElement.GetProperty("invoices").EnumerateArray().Select(x => new UlazniERacun
+        return doc.RootElement.GetProperty("invoices").EnumerateArray().Select(x => new UlazniERacun
         {
             Broj = x.GetProperty("UniqueId").GetString() ?? "",
             Datum = x.GetProperty("IssueDate").GetDateTime(),
@@ -143,12 +97,12 @@ public class Super : Posrednik
     /// <returns>XML/UBL sadržaj računa kao tekst.</returns>
     public override async Task<string> IzlazniUBLAsync(string id, CancellationToken cancellationToken = default)
     {
-        var jDoc = await postRequest("api/SendingInvoice/GetSendingInvoice", new Dictionary<string, string>
+        var doc = await postRequestAsync("api/SendingInvoice/GetSendingInvoice", new Dictionary<string, string>
         {
             ["Guid"] = id.ToString()
         }, cancellationToken);
 
-        if (!jDoc.RootElement.TryGetProperty("sendingInvoiceUbl", out var el)) throw new Exception("UBL not found in response");
+        if (!doc.RootElement.TryGetProperty("sendingInvoiceUbl", out var el)) throw new Exception("UBL not found in response");
         return Encoding.UTF8.GetString(Convert.FromBase64String(el.GetString()));
         
     }
@@ -161,12 +115,12 @@ public class Super : Posrednik
     /// <returns>PDF sadržaj računa kao bajtni niz.</returns>
     public override async Task<byte[]> IzlazniPdfAsync(string id, CancellationToken cancellationToken = default)
     {
-        var jDoc = await postRequest("api/SendingInvoice/GetSendingInvoiceDetailVisualization", new Dictionary<string, string>
+        var doc = await postRequestAsync("api/SendingInvoice/GetSendingInvoiceDetailVisualization", new Dictionary<string, string>
         {
             ["Guid"] = id.ToString()
         }, cancellationToken);
 
-        var root = jDoc.RootElement;
+        var root = doc.RootElement;
 
         if (!root.TryGetProperty("sendingInvoiceDetailVisualization", out var el)) throw new Exception("PDF not found in response");
         return Convert.FromBase64String(el.GetString());
@@ -182,13 +136,13 @@ public class Super : Posrednik
     /// <returns>Popis izlaznih e-računa.</returns>
     public override async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken)
     {
-        var jsonDocument = await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
+        var doc = await postRequestAsync("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
         {
             ["DateFrom"] = from.ToString("yyyy-MM-dd"),
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
 
-        return jsonDocument.RootElement.GetProperty("invoices").EnumerateArray().Select(x => new IzlazniERacun
+        return doc.RootElement.GetProperty("sendingInvoices").EnumerateArray().Select(x => new IzlazniERacun
         {
             Broj = x.GetProperty("UniqueId").GetString() ?? "",
             Datum = x.GetProperty("IssueDate").GetDateTime(),
@@ -208,7 +162,7 @@ public class Super : Posrednik
     /// </summary>
     /// <param name="ubl">UBL XML dokument ulaznog računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await postRequest("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await postRequestAsync("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
     {
         ["Base64EncodedUbl"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl)),
         ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
@@ -224,7 +178,7 @@ public class Super : Posrednik
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
     {
-        await postRequest("api/Invoice/SetInvoicePayment", new Dictionary<string, string>
+        await postRequestAsync("api/Invoice/SetInvoicePayment", new Dictionary<string, string>
         {
             ["Guid"] = id.ToString()
         }, cancellationToken);
@@ -239,11 +193,46 @@ public class Super : Posrednik
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     public override async Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken cancellationToken = default)
     {
-        await postRequest("api/SendingInvoice/RejectSendingInvoice", new Dictionary<string, string>
+        await postRequestAsync("api/SendingInvoice/RejectSendingInvoice", new Dictionary<string, string>
         {
             ["Guid"] = id.ToString(),
             ["RejectReasonType"] = razlog.ToString(),
             ["RejectionReasonDescription"] = opis
          }, cancellationToken);
+    }
+
+    async Task<JsonDocument> postRequestAsync(string uri, Dictionary<string, string> body, CancellationToken cancellationToken = default)
+    {
+        // dohvati token ako ga nema ili je istekao
+        if (token == null || DateTime.UtcNow >= token.Value.Value)
+        {
+            using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
+            tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "password", ["username"] = Username, ["password"] = Password });
+
+            var tokenContent = await SendRequest(tokenRequest, cancellationToken);
+
+            using var doc = JsonDocument.Parse(tokenContent);
+
+            token = new KeyValuePair<string, DateTime>(
+                doc.RootElement.GetProperty("access_token").GetString()!,
+                DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32() - 60)
+            );
+        }
+
+        body.Add("MessageId", Guid.NewGuid().ToString());
+        body.Add("CompanyGuid", BusinessGuid);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, uri);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Value.Key);
+        request.Content = new FormUrlEncodedContent(body);
+        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+
+        var content = await SendRequest(request, cancellationToken);
+
+        var jsonDocument = JsonDocument.Parse(content);
+        if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
+        return jsonDocument;
     }
 }

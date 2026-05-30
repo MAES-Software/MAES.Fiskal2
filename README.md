@@ -24,19 +24,21 @@ Modeli `UlazniERacun` i `IzlazniERacun` predstavljaju minimalne informacije o ra
 
 U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
-| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `Moj eRačun` | `Redok` | `Parra` |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|
-| Dohvat ulaznih e-računa | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ |
-| Dohvat izlaznih e-računa | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ |
-| Dohvat UBL sadržaja | ✅ | ✅ | ❌* | ✅ | ❌ | ❌ |
-| Dohvat PDF sadržaja | ✅ | ✅ | ❌* | ❌** | ❌ | ❌ |
-| Evidentiranje UBL dokumenta | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Evidentiranje uplate | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ |
-| Odbijanje računa | ✅ | ✅ | ❌* | ❌ | ❌ | ❌ |
+| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `MER` | `Redok` | `Tvoj eRačun` | `Doku` |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Dohvat ulaznih računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Dohvat izlaznih računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌ | ⚠️ | 🚧 | 🚧 | ⚠️ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌ | ❌ | 🚧 | 🚧 | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | ⚠️ | 🚧 | 🚧 | ⚠️ |
+| Evidentiranje uplate | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Odbijanje računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Prihvaćanje računa | ❌ | 🚧 | ❌ | 🚧 | 🚧 | 🚧 | 🚧 |
 
-\* Fina nema pola ovih api callova ili su na nekom drugom endpointu treba vidit
-
-\*\* MER ne podržava dohvat PDF byte[]
+* ✅ — Implementirano
+* ⚠️ — Nije testirano/Ne prolazi testove
+* 🚧 — Nije još implementirano
+* ❌ — Posrednik ne podržava
 
 ## Instalacija
 
@@ -93,14 +95,20 @@ var posrednik = new MER
     Password = "...",
     OIB = "..."
 };
+
+// Moj eRačun
+var posrednik = new MER
+{
+    ApiKey = "...",
+    OIB = "..."
+};
 ```
 
 ### Primjer korištenja posrednika
 
 ```csharp
-// dohvat računa u razdoblju zadnjih mj. dana ili dohvati paginacijom zavisi sto posrednik podržava
+// dohvat računa u razdoblju zadnjih mj. dana
 var racuni = posrednik.UlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
-var racuni = posrednik.UlazniListAsync(1, 20);
 
 var racun = racuni.FirstOrDefault();
 if(racun != null)
@@ -168,7 +176,11 @@ Abstraktna klasa `Posrednik` nudi sljedeće metode:
 
 - `Task OdbijRacunAsync(string id, RazlogOdbijana razlog, string opis)`
 
-    Odbija račun
+    Odbija ulazni eRačun
+
+- `Task PrihvatiRacunAsync(string id)`
+
+    Prihvaća ulazni eRačun
 
 ## Izgradnja i pakiranje
 

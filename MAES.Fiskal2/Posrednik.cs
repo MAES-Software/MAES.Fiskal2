@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using MAES.Fiskal2.Posrednici;
 
@@ -11,28 +13,14 @@ namespace MAES.Fiskal2;
 [JsonDerivedType(typeof(Super), "Super")]
 [JsonDerivedType(typeof(EPoslovanje), "EPoslovanje")]
 [JsonDerivedType(typeof(Fina), "Fina")]
-public abstract class Posrednik
+[JsonDerivedType(typeof(Doku), "Doku")]
+[JsonDerivedType(typeof(MER), "MER")]
+public abstract class Posrednik(string urlProd, string urlDev)
 {
     /// <summary>
     /// Označava koristi li se razvojno okruženje.
-    /// Ako je <c>true</c>, koristi se <see cref="UriDev"/>; inače <see cref="UriProd"/>.
     /// </summary>
     public bool IsDev { get; set; }
-
-    /// <summary>
-    /// Produkcijski URI servisa.
-    /// </summary>
-    protected string UriProd { private get; set; } = "";
-
-    /// <summary>
-    /// URI razvojnog (testnog) okruženja servisa.
-    /// </summary>
-    protected string UriDev { private get; set; } = "";
-
-    /// <summary>
-    /// Aktivni URI servisa ovisno o odabranom okruženju.
-    /// </summary>
-    protected string Uri => IsDev ? UriDev : UriProd;
 
     /// <summary>
     /// Evidentira izlazni eRačun na temelju UBL sadržaja.
@@ -68,24 +56,12 @@ public abstract class Posrednik
     public virtual Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
-    /// Dohvaća popis izlaznih eRačuna unutar zadanog razdoblja.
-    /// </summary>
-    /// <param name="page">Stranica rezultata.</param>
-    /// <param name="pageSize">Broj rezultata po stranici.</param>
-    /// <param name="token">Token za otkazivanje operacije.</param>
-    /// <returns>Kolekcija izlaznih eRačuna.</returns>
-    public virtual Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(int page, int pageSize, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
     /// Dohvaća PDF prikaz izlaznog računa.
     /// </summary>
     /// <param name="id">Identifikator računa.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>Sadržaj PDF dokumenta kao niz bajtova.</returns>
-    public virtual Task<byte[]> IzlazniPdfAsync(
-        string id,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task<byte[]> IzlazniPdfAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Dohvaća UBL XML izlaznog računa.
@@ -93,24 +69,16 @@ public abstract class Posrednik
     /// <param name="id">Identifikator računa.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>UBL XML sadržaj računa.</returns>
-    public virtual Task<string> IzlazniUBLAsync(
-        string id,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task<string> IzlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
-    /// Odbija račun uz navedeni razlog i opis.
+    /// Odbija ulazni eRačun uz navedeni razlog i opis.
     /// </summary>
     /// <param name="id">Identifikator računa.</param>
     /// <param name="razlog">Razlog odbijanja.</param>
     /// <param name="opis">Dodatni opis odbijanja.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
-    public virtual Task OdbijRacunAsync(
-        string id,
-        RazlogOdbijanja razlog,
-        string opis,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Dohvaća popis ulaznih eRačuna unutar zadanog razdoblja.
@@ -122,24 +90,12 @@ public abstract class Posrednik
     public virtual Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
-    /// Dohvaća popis ulaznih eRačuna unutar zadanog razdoblja.
-    /// </summary>
-    /// <param name="page">Stranica rezultata.</param>
-    /// <param name="pageSize">Broj rezultata po stranici.</param>
-    /// <param name="token">Token za otkazivanje operacije.</param>
-    /// <returns>Kolekcija ulaznih eRačuna.</returns>
-    public virtual Task<IEnumerable<UlazniERacun>> UlazniListAsync(int page, int pageSize, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
     /// Dohvaća PDF prikaz ulaznog računa.
     /// </summary>
     /// <param name="id">Identifikator računa.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>Sadržaj PDF dokumenta kao niz bajtova.</returns>
-    public virtual Task<byte[]> UlazniPdfAsync(
-        string id,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Dohvaća UBL XML ulaznog računa.
@@ -147,8 +103,34 @@ public abstract class Posrednik
     /// <param name="id">Identifikator računa.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>UBL XML sadržaj računa.</returns>
-    public virtual Task<string> UlazniUBLAsync(
-        string id,
-        CancellationToken token = default) =>
-        throw new NotImplementedException();
+    public virtual Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+
+    /// <summary>
+    /// Prihvaća ulazni eRačun, označavajući ga kao zaprimljen ili odobren (ovisno o implementaciji posrednika).
+    /// </summary>
+    /// <param name="id">Identifikator računa.</param>
+    /// <param name="token">Token za otkazivanje operacije.</param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public virtual Task PrihvatiRacunAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
+
+    /// <summary>
+    /// Generička metoda za slanje HTTP zahtjeva prema posredniku. Koristi se unutar specifičnih implementacija posrednika za komunikaciju s njihovim API-jem.
+    /// </summary>
+    /// <param name="request">Pripremljeni HTTP zahtjev.</param>
+    /// <param name="token">Token za otkazivanje operacije.</param>
+    /// <returns>Sadržaj odgovora kao niz znakova.</returns>
+    /// <exception cref="HttpRequestException"></exception>
+    protected async Task<string> SendRequest(HttpRequestMessage request, CancellationToken token = default)
+    {
+        using var client = new HttpClient { BaseAddress = new Uri(IsDev ? urlDev : urlProd) };
+
+        using var response = await client.SendAsync(request, token);
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException(content);
+
+        return content;
+    }
 }

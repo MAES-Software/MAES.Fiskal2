@@ -29,31 +29,7 @@ public class MER : Posrednik
     /// Inicijalizira novog Moj-eRačun posrednika s definiranim URI adresama
     /// za produkcijsko i razvojno okruženje.
     /// </summary>
-    public MER()
-    {
-        UriProd = "https://www.moj-eracun.hr";
-        UriDev = "https://demo.moj-eracun.hr";
-    }
-
-    async Task<string> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
-    {
-        var client = new HttpClient
-        {
-            BaseAddress = new Uri(Uri)
-        };
-
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        var req = new HttpRequestMessage(method, url);
-        if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-
-        var res = await client.SendAsync(req, token);
-        var json = await res.Content.ReadAsStringAsync();
-
-        if (!res.IsSuccessStatusCode) throw new HttpRequestException(json);
-        
-        return json;
-    }
+    public MER() : base("https://www.moj-eracun.hr", "https://demo.moj-eracun.hr") { }
 
     /// <summary>
     /// Šalje UBL/XML dokument izlaznog e-računa na Moj-eRačun servis.
@@ -62,7 +38,7 @@ public class MER : Posrednik
     /// </summary>
     /// <param name="ubl">UBL XML sadržaj e-računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) =>await sendRequest(HttpMethod.Post, "/apis/v2/send", new
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await sendRequest(HttpMethod.Post, "/apis/v2/send", new
     {
         Username,
         Password,
@@ -184,5 +160,14 @@ public class MER : Posrednik
                 _ => "O"
             }
         }, cancellationToken);
+    }
+
+    async Task<string> sendRequest(HttpMethod method, string uri, object? body = null, CancellationToken token = default)
+    {
+        using var request = new HttpRequestMessage(method, uri);
+
+        if(body != null) request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+
+        return await SendRequest(request, token);
     }
 }

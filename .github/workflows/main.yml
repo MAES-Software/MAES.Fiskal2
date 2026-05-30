@@ -17,6 +17,10 @@ jobs:
       SUPER_BUSINESS_GUID: ${{ secrets.SUPER_BUSINESS_GUID }}
       SUPER_USERNAME: ${{ secrets.SUPER_USERNAME }}
       SUPER_PASSWORD: ${{ secrets.SUPER_PASSWORD }}
+      EPOSLOVANJE_USERNAME: ${{ secrets.EPOSLOVANJE_USERNAME }}
+      EPOSLOVANJE_PASSWORD: ${{ secrets.EPOSLOVANJE_PASSWORD }}
+      EPOSLOVANJE_API_KEY: ${{ secrets.EPOSLOVANJE_API_KEY }}
+      DOKU_API_KEY: ${{ secrets.DOKU_API_KEY }}
 
     steps:
       - name: Checkout repository
@@ -31,7 +35,7 @@ jobs:
         run: dotnet restore MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj
 
       - name: Run tests
-        run: dotnet test MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj --configuration Release --no-restore
+        run: dotnet test MAES.Fiskal2.Tests/MAES.Fiskal2.Tests.csproj --configuration Release --no-restore -v normal --logger "console;verbosity=detailed"
 
   pack-and-publish:
     name: Pack and publish package

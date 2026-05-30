@@ -23,11 +23,7 @@ public class Fina : Posrednik
     /// <summary>
     /// Inicijalizira novog FINA posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
     /// </summary>
-    public Fina()
-    {
-        UriProd = "https://eracun.fina.hr/eracun-b2b/services/eRacunB2BPortType";
-        UriDev = "https://eracun-test.fina.hr/eracun-b2b/services/eRacunB2BPortType";
-    }
+    public Fina() : base("https://eracun.fina.hr/eracun-b2b/services/eRacunB2BPortType", "https://eracun-test.fina.hr/eracun-b2b/services/eRacunB2BPortType") { }
 
     /// <summary>
     /// Evidentira i šalje UBL/XML dokument prema FINA e-Račun sustavu.
@@ -66,7 +62,8 @@ public class Fina : Posrednik
             }
         };
 
-        using var client = new eRacunB2BPortTypeClient(eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, Uri);
+        var baseAddress = IsDev ? "https://eracun-test.fina.hr/eracun-b2b/services/eRacunB2BPortType" : "https://eracun.fina.hr/eracun-b2b/services/eRacunB2BPortType";
+        using var client = new eRacunB2BPortTypeClient(eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, baseAddress);
 
         var res = await client.sendB2BOutgoingInvoiceAsync(msg);
 
@@ -181,13 +178,4 @@ public class Fina : Posrednik
                    .Value
                ?? throw new InvalidOperationException("UBL nema BuyerID.");
     }
-
-    eRacunB2BPortTypeClient CreateClient() => new (eRacunB2BPortTypeClient.EndpointConfiguration.eRacunB2BPortType, Uri);
-
-    HeaderSupplierType Header() => new()
-    {
-        MessageID = Guid.NewGuid().ToString(),
-        ERPID = "MAES.Fiskal2",
-        SupplierID = OIB
-    };
 }

@@ -10,81 +10,14 @@ namespace MAES.Fiskal2.Posrednici;
 public class EPoslovanje : Posrednik
 {
     /// <summary>
-    /// OIB poslovnog subjekta.
+    /// API ključ za autentifikaciju.
     /// </summary>
-    public string OIB { get; set; } = "";
-
-    /// <summary>
-    /// Korisničko ime za autentifikaciju.
-    /// </summary>
-    public string Username { get; set; } = "";
-    
-    /// <summary>
-    /// Lozinka za autentifikaciju.
-    /// </summary>
-    public string Password { get; set; } = "";
+    public string ApiKey { get; set; } = "";
 
     /// <summary>
     ///  Inicijalizira novog ePoslovanje posrednika s definiranim URI postavkama za produkcijsko i razvojno okruženje.
     /// </summary>
-    public EPoslovanje()
-    {
-        UriProd = "https://eracun.eposlovanje.hr";
-        UriDev = "https://test.eposlovanje.hr";
-    }
-
-    HttpClient createClient()
-    {
-        var client = new HttpClient
-        {
-            BaseAddress = new Uri(Uri)
-        };
-
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        return client;
-    }
-
-    async Task<string> apiKey()
-    {
-        using var client = createClient();
-
-        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v2/account/apikey")
-        {
-            Content = new StringContent(JsonSerializer.Serialize(new
-            {
-                username = Username,
-                password = Password,
-                vatId = OIB,
-                softwareId = "MAES.Fiskal2"
-            }), Encoding.UTF8, "application/json")
-        };
-
-        var response = await client.SendAsync(request);
-        var json = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-            throw new HttpRequestException(json);
-
-        using var doc = JsonDocument.Parse(json);
-        return doc.RootElement.GetProperty("apiKey").GetString()!;
-    }
-
-    async Task<JsonDocument> sendRequest(HttpMethod method, string url, object? body, CancellationToken token)
-    {
-        using var client = createClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", await apiKey());
-
-        var req = new HttpRequestMessage(method, url);
-        if (body != null) req.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-
-        var res = await client.SendAsync(req, token);
-        var json = await res.Content.ReadAsStringAsync();
-
-        if (!res.IsSuccessStatusCode) throw new HttpRequestException(json);
-        
-        return JsonDocument.Parse(json);
-    }
+    public EPoslovanje() : base("https://eracun.eposlovanje.hr", "https://test.eposlovanje.hr") { }
 
     async Task changeStatusAsync(string id, int status, string? note = null, double? partialPaymentAmount = null, CancellationToken token = default)
     {
@@ -104,21 +37,22 @@ public class EPoslovanje : Posrednik
     /// Dohvaća XML/UBL sadržaj ulaznog računa.
     /// </summary>
     public override async Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => 
-        (await sendRequest(HttpMethod.Get, $"/api/v2/document/get/{id}", null, token)).RootElement.GetProperty("document").GetString()!;
+        JsonDocument.Parse(await sendRequest(HttpMethod.Get, $"/api/v2/document/get/{id}", null, token)).RootElement.GetProperty("document").GetString()!;
 
     /// <summary>
     /// Dohvaća PDF sadržaj ulaznog računa.
     /// </summary>
     public override async Task<byte[]> UlazniPdfAsync(string id, CancellationToken token = default) =>
-        Convert.FromBase64String((await sendRequest(HttpMethod.Get, $"/api/v2/document/visualization/{id}", null, token)).RootElement.GetProperty("pdf").GetString()!);
+        Convert.FromBase64String(JsonDocument.Parse(await sendRequest(HttpMethod.Get, $"/api/v2/document/visualization/{id}", null, token)).RootElement.GetProperty("pdf").GetString()!);
 
     /// <summary>
     /// Dohvaća popis ulaznih e-računa.
     /// </summary>
     public override async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken token = default)
     {
-        var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/incoming?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
-        
+        var content = await sendRequest(HttpMethod.Get, $"/api/v2/document/incoming?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+        var doc = JsonDocument.Parse(content);
+
         var list = new List<UlazniERacun>();
 
         foreach (var item in doc.RootElement.EnumerateArray())
@@ -157,7 +91,8 @@ public class EPoslovanje : Posrednik
     DateTime to,
     CancellationToken token = default)
     {
-        var doc = await sendRequest(HttpMethod.Get, $"/api/v2/document/outgoing?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+        var content = await sendRequest(HttpMethod.Get, $"/api/v2/document/outgoing?insertedFrom={from:O}&insertedTo={to:O}&limit=1000&offset=0", null, token);
+        var doc = JsonDocument.Parse(content);
 
         var list = new List<IzlazniERacun>();
 
@@ -183,7 +118,7 @@ public class EPoslovanje : Posrednik
     public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default) => await sendRequest(HttpMethod.Post, "/api/v2/document/send", new
     {
         document = ubl,
-        softwareId = "MAES.Blagajna"
+        softwareId = "MAES.Fiskal2"
     }, token);
 
     /// <summary>
@@ -200,4 +135,18 @@ public class EPoslovanje : Posrednik
     /// </summary>
     public override Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) =>
         changeStatusAsync(id, status: 6, $"{razlog}: {opis}", token: token);
+
+    async Task<string> sendRequest(HttpMethod method, string uri, object? body = null, CancellationToken token = default)
+    {
+        var request = new HttpRequestMessage(method, uri)
+        {
+            Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
+        };
+
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        request.Headers.Authorization = new AuthenticationHeaderValue(ApiKey);
+
+        return await SendRequest(request, token);
+    }
 }
