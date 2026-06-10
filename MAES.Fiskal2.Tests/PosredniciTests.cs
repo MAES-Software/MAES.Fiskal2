@@ -1,6 +1,5 @@
 ﻿
 using MAES.Fiskal2.Posrednici;
-using Xunit.Abstractions;
 
 namespace MAES.Fiskal2.Tests;
 
@@ -23,6 +22,14 @@ public class PosredniciTests
         new Doku
         {
             ApiKey = Environment.GetEnvironmentVariable("DOKU_API_KEY") ?? throw new InvalidOperationException("DOKU_API_KEY environment variable is not set."),
+            IsDev = true
+        },
+        new MER
+        {
+            Username = Environment.GetEnvironmentVariable("MER_USERNAME") ?? throw new InvalidOperationException("MER_USERNAME environment variable is not set."),
+            Password = Environment.GetEnvironmentVariable("MER_PASSWORD") ?? throw new InvalidOperationException("MER_PASSWORD environment variable is not set."),
+            CompanyId = Environment.GetEnvironmentVariable("MER_COMPANY_ID") ?? throw new InvalidOperationException("MER_COMPANY_ID environment variable is not set."),
+            SoftwareId = Environment.GetEnvironmentVariable("MER_SOFTWARE_ID") ?? throw new InvalidOperationException("MER_SOFTWARE_ID environment variable is not set."),
             IsDev = true
         }
     ];

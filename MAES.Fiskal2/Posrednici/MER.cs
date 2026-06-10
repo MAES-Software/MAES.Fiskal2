@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
@@ -26,6 +25,16 @@ public class MER : Posrednik
     public string OIB { get; set; } = "";
 
     /// <summary>
+    /// ID softvera za autentifikaciju na Moj-eRačun API-u.
+    /// </summary>
+    public string SoftwareId { get; set; } = "";
+
+    /// <summary>
+    /// ID poslovnog subjekta koji se koristi u nekim Moj-eRačun API pozivima, obično jednak OIB-u.
+    /// </summary>
+    public string CompanyId { get; set; } = "";
+
+    /// <summary>
     /// Inicijalizira novog Moj-eRačun posrednika s definiranim URI adresama
     /// za produkcijsko i razvojno okruženje.
     /// </summary>
@@ -42,8 +51,8 @@ public class MER : Posrednik
     {
         Username,
         Password,
-        CompanyId = OIB,
-        SoftwareId = "MAES.Fiskal2",
+        CompanyId,
+        SoftwareId,
         File = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl))
     }, cancellationToken);
 
