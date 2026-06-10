@@ -99,8 +99,10 @@ var posrednik = new MER
 // Moj eRačun
 var posrednik = new MER
 {
-    ApiKey = "...",
-    OIB = "..."
+    Username = "...",
+    Password = "...",
+    SoftwareId = "...",
+    CompanyId = "..."
 };
 ```
 
