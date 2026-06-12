@@ -1,5 +1,3 @@
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using MAES.Fiskal2.Posrednici;
 
@@ -38,12 +36,7 @@ public abstract class Posrednik(string urlProd, string urlDev)
     /// <param name="amount">Iznos uplate.</param>
     /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
-    public virtual Task EvidentirajUplatuAsync(
-        string id,
-        DateTime date,
-        double amount,
-        NacinPlacanja paymentMethod,
-        CancellationToken token = default) =>
+    public virtual Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default) =>
         throw new NotImplementedException();
 
     /// <summary>
@@ -104,15 +97,6 @@ public abstract class Posrednik(string urlProd, string urlDev)
     /// <param name="token">Token za otkazivanje operacije.</param>
     /// <returns>UBL XML sadržaj računa.</returns>
     public virtual Task<string> UlazniUBLAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
-
-    /// <summary>
-    /// Prihvaća ulazni eRačun, označavajući ga kao zaprimljen ili odobren (ovisno o implementaciji posrednika).
-    /// </summary>
-    /// <param name="id">Identifikator računa.</param>
-    /// <param name="token">Token za otkazivanje operacije.</param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public virtual Task PrihvatiRacunAsync(string id, CancellationToken token = default) => throw new NotImplementedException();
 
     /// <summary>
     /// Generička metoda za slanje HTTP zahtjeva prema posredniku. Koristi se unutar specifičnih implementacija posrednika za komunikaciju s njihovim API-jem.

@@ -1,6 +1,9 @@
 using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography.Xml;
 using System.Text;
+using System.Xml;
 using System.Xml.Linq;
+using System.Text.RegularExpressions;
 
 namespace MAES.Fiskal2.Posrednici;
 
@@ -9,12 +12,6 @@ namespace MAES.Fiskal2.Posrednici;
 /// </summary>
 public class Fina : Posrednik
 {
-
-    /// <summary>
-    /// OIB poslovnog subjekta.
-    /// </summary>
-    public string OIB { get; set; } = "";
-
     /// <summary>
     /// X.509 certifikat koji se koristi za autentikaciju prema FINA e-Račun sustavu.
     /// </summary>
@@ -33,16 +30,25 @@ public class Fina : Posrednik
     /// <returns>Asinkrona operacija slanja dokumenta.</returns>
     public override async Task EvidentirajUBLAsync(string ubl, CancellationToken token = default)
     {
+        if(Certificate == null) throw new InvalidOperationException("Za slanje računa putem FINA posrednika potreban je X.509 certifikat.");
+
         var xml = XDocument.Parse(ubl);
         var supplierInvoiceId = GetInvoiceId(xml);
         var buyerId = GetBuyerId(xml);
+
+        // Sign the UBL document if certificate is available
+        var signedUbl = signUblDocument(ubl);
+
+        // dohvati oib
+        var match = Regex.Match(Certificate.Subject, @"HR(\d{11})");
+        if(!match.Success) throw new InvalidOperationException("Ne mogu pronaći OIB u Subject polju certifikata. Očekivani format: HR12345678901");
 
         var msg = new SendB2BOutgoingInvoiceMsg
         {
             HeaderSupplier = new HeaderSupplierType
             {
                 MessageID = Guid.NewGuid().ToString("N"),
-                SupplierID = OIB,
+                SupplierID = match.Groups[1].Value,
                 ERPID = "MAES.Fiskal2",
                 MessageType = "1"
             },
@@ -56,7 +62,7 @@ public class Fina : Posrednik
                     SupplierInvoiceID = supplierInvoiceId,
                     BuyerID = buyerId,
                     AdditionalBuyerID = null,
-                    Item = Encoding.UTF8.GetBytes(ubl),
+                    Item = Encoding.UTF8.GetBytes(signedUbl),
                     ItemElementName = ItemChoiceType.InvoiceEnvelope
                 }
             }
@@ -120,10 +126,8 @@ public class Fina : Posrednik
     /// <param name="opis">Dodatni opis odbijanja.</param>
     /// <param name="token">Cancellation token.</param>
     /// <returns>Asinkrona operacija odbijanja dokumenta.</returns>
-    public override Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default)
-    {
-        throw new NotImplementedException();
-    }
+    public override Task OdbijRacunAsync(string id, RazlogOdbijanja razlog, string opis, CancellationToken token = default) =>
+        throw new NotSupportedException("Odbijanje računa nije podržano u FINA posredniku");
 
     /// <summary>
     /// Dohvaća popis ulaznih e-računa za zadani period.
@@ -177,5 +181,47 @@ public class Fina : Posrednik
                    .FirstOrDefault()?
                    .Value
                ?? throw new InvalidOperationException("UBL nema BuyerID.");
+    }
+
+    string signUblDocument(string ubl)
+    {
+        var doc = new XmlDocument();
+        doc.LoadXml(ubl);
+
+        var signedXml = new SignedXml(doc)
+        {
+            SigningKey = Certificate!.GetRSAPrivateKey(),
+        };
+
+        // Postavi kanonikalizaciju
+        signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
+
+        // Kreiraj referencu na cijeli dokument
+        var reference = new Reference("")
+        {
+            DigestMethod = "http://www.w3.org/2001/04/xmlenc#sha256"
+        };
+
+        // Dodaj transformacije
+        var envelopedTransform = new XmlDsigEnvelopedSignatureTransform(false);
+        var excC14NTransform = new XmlDsigExcC14NTransform(false);
+        reference.AddTransform(envelopedTransform);
+        reference.AddTransform(excC14NTransform);
+
+        signedXml.AddReference(reference);
+
+        // Dodaj X.509 certifikat u KeyInfo
+        var keyInfo = new KeyInfo();
+        keyInfo.AddClause(new KeyInfoX509Data(Certificate));
+        signedXml.KeyInfo = keyInfo;
+
+        // Izračunaj i dodaj potpis
+        signedXml.ComputeSignature();
+
+        // Nađi korijen elementa i dodaj Signature element
+        var signatureElement = signedXml.GetXml();
+        doc.DocumentElement?.AppendChild(doc.ImportNode(signatureElement, true));
+
+        return doc.OuterXml;
     }
 }

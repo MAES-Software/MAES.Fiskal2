@@ -24,21 +24,20 @@ Modeli `UlazniERacun` i `IzlazniERacun` predstavljaju minimalne informacije o ra
 
 U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
-| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `MER` | `Redok` | `Tvoj eRačun` | `Doku` |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Dohvat ulaznih računa | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
-| Dohvat izlaznih računa | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
-| Dohvat UBL sadržaja | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
-| Dohvat PDF sadržaja | ✅ | ✅ | ❌ | ❌ | 🚧 | 🚧 | ❌ |
-| Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | ✅ | 🚧 | 🚧 | ⚠️ |
-| Evidentiranje uplate | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
-| Odbijanje računa | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
-| Prihvaćanje računa | ❌ | 🚧 | ❌ | ✅ | 🚧 | 🚧 | 🚧 |
+| Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `MER` |
+|---|:---:|:---:|:---:|:---:|
+| Dohvat ulaznih računa | ✅ | ✅ | ❌ | ✅ |
+| Dohvat izlaznih računa | ✅ | ✅ | ❌ | ✅ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌ | ✅ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌ | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | ✅ |
+| Evidentiranje uplate | ✅ | ✅ | ❌ | ✅ |
+| Odbijanje računa | ✅ | ✅ | ❌ | ✅ |
 
-* ✅ — Implementirano
-* ⚠️ — Nije testirano/Ne prolazi testove
-* 🚧 — Nije još implementirano
-* ❌ — Posrednik ne podržava
+✅ Implementirano
+⚠️ Nije testirano/Ne prolazi testove
+🚧 WIP
+❌ Posrednik ne podržava
 
 ## Instalacija
 
@@ -62,7 +61,7 @@ Ili direktno u datoteku `.csproj`:
 using MAES.Fiskal2.Posrednici;
 
 // Super.hr
-var posrednik = new Super
+var super = new Super
 {
     IsDev = true,
     BusinessGuid = "...",
@@ -71,7 +70,7 @@ var posrednik = new Super
 };
 
 // ePoslovanje
-var posrednik = new EPoslovanje
+var eposl = new EPoslovanje
 {
     IsDev = true,
     OIB = "...",
@@ -80,44 +79,50 @@ var posrednik = new EPoslovanje
 };
 
 // Fina
-var posrednik = new Fina
+var fina = new Fina
 {
-    IsDev = true,
-    OIB = "...",
     Certificate = ...
 };
 
 // Moj eRačun
-var posrednik = new MER
+var mer = new MER
 {
     IsDev = true,
     Username = "...",
     Password = "...",
     OIB = "..."
 };
-
-// Moj eRačun
-var posrednik = new MER
-{
-    Username = "...",
-    Password = "...",
-    SoftwareId = "...",
-    CompanyId = "..."
-};
 ```
 
-### Primjer korištenja posrednika
+## Primjer korištenja posrednika
 
 ```csharp
-// dohvat računa u razdoblju zadnjih mj. dana
-var racuni = posrednik.UlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
+// dohvat ulaznih računa u razdoblju zadnjih mj. dana
+var ulazniRacuni = posrednik.UlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
 
-var racun = racuni.FirstOrDefault();
-if(racun != null)
+var ulazniRacun = ulazniRacuni.FirstOrDefault();
+if(ulazniRacun != null)
 {
     // dohvat ubl stringa i pdf byteova
-    string ubl = await posrednik.UlazniUBLAsync(racun.Id);
-    byte[] pdf = await posrednik.UlazniPdfAsync(racun.Id);
+    string ubl = await posrednik.UlazniUBLAsync(ulazniRacun.Id);
+    byte[] pdf = await posrednik.UlazniPdfAsync(ulazniRacun.Id);
+
+    // odbija ulazni račun
+    await posrednik.OdbijRacunAsync(ulazniRacun.Id);
+}
+
+// dohvat izlaznih računa u razdoblju zadnjih mj. dana
+var izlazniRacuni = posrednik.IzlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
+
+var izlazniRacun = izlazniRacuni.FirstOrDefault();
+if(izlazniRacun != null)
+{
+    // dohvat ubl stringa i pdf byteova
+    string ubl = await posrednik.IzlazniUBLAsync(izlazniRacun.Id);
+    byte[] pdf = await posrednik.IzlazniPdfAsync(izlazniRacun.Id);
+
+    // evidentira uplatu za izlazni račun
+    await posrednik.EvidentirajUplatuAsync(izlazniRacun.Id);
 }
 
 // evidentiranje računa
@@ -137,10 +142,6 @@ Abstraktna klasa `Posrednik` nudi sljedeće metode:
     
     Dohvaća popis ulaznih računa u vremenskom rasponu
 
-- `Task<IEnumerable<UlazniERacun>> UlazniListAsync(int page, int pageSize)`
-    
-    Dohvaća popis ulaznih računa (pagination)
-
 - `Task<string> UlazniUBLAsync(string id)`
     
     Dohvaća XML/UBL sadržaj ulaznog računa
@@ -153,10 +154,6 @@ Abstraktna klasa `Posrednik` nudi sljedeće metode:
 - `Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to)`
 
     Dohvaća popis izlaznih računa u vremenskom rasponu
-
-- `Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(int page, int pageSize)`
-    
-    Dohvaća popis izlaznih računa (pagination)
 
 - `Task<string> IzlazniUBLAsync(string id)`
 
@@ -174,15 +171,11 @@ Abstraktna klasa `Posrednik` nudi sljedeće metode:
     
 - `Task EvidentirajUplatuAsync(string id, DateTime datum, double iznos, NacinPlacanja nacinPlacanja)`
 
-    Evidentira uplatu za račun
+    Evidentira uplatu za izlazni račun
 
 - `Task OdbijRacunAsync(string id, RazlogOdbijana razlog, string opis)`
 
     Odbija ulazni eRačun
-
-- `Task PrihvatiRacunAsync(string id)`
-
-    Prihvaća ulazni eRačun
 
 ## Izgradnja i pakiranje
 
