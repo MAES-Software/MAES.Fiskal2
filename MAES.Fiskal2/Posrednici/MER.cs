@@ -4,8 +4,9 @@ using System.Text.Json;
 namespace MAES.Fiskal2.Posrednici;
 
 /// <summary>
-/// Implementacija posrednika za Moj-eRačun, servis za slanje i obradu elektroničkih računa.
+/// Implementacija posrednika za Moj-eRačun (MER), servis za slanje i obradu elektroničkih računa.
 /// Omogućuje evidentiranje UBL/XML dokumenata putem demo ili produkcijskog API-ja.
+/// https://manual.moj-eracun.hr/hr/documentation/api-specifikacija-2/
 /// </summary>
 public class MER : Posrednik
 {
@@ -18,11 +19,6 @@ public class MER : Posrednik
     /// Lozinka za autentifikaciju na Moj-eRačun API-u.
     /// </summary>
     public string Password { get; set; } = "";
-
-    /// <summary>
-    /// OIB poslovnog subjekta pošiljatelja.
-    /// </summary>
-    public string OIB { get; set; } = "";
 
     /// <summary>
     /// ID softvera za autentifikaciju na Moj-eRačun API-u.
@@ -65,8 +61,8 @@ public class MER : Posrednik
     {
         Username,
         Password,
-        CompanyId = OIB,
-        SoftwareId = "MAES.Fiskal2",
+        CompanyId,
+        SoftwareId,
         ElectronicId = id
     }, cancellationToken);
 
@@ -92,8 +88,8 @@ public class MER : Posrednik
         {
             Username,
             Password,
-            CompanyId = OIB,
-            SoftwareId = "MAES.Fiskal2",
+            CompanyId,
+            SoftwareId,
             From = from.ToString("yyyy-MM-dd"),
             To = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
@@ -149,8 +145,8 @@ public class MER : Posrednik
         {
             Username,
             Password,
-            CompanyId = OIB,
-            SoftwareId = "MAES.Fiskal2",
+            CompanyId,
+            SoftwareId,
             From = from.ToString("yyyy-MM-dd"),
             To = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
@@ -191,8 +187,8 @@ public class MER : Posrednik
         {
             Username,
             Password,
-            CompanyId = OIB,
-            SoftwareId = "MAES.Fiskal2",
+            CompanyId,
+            SoftwareId,
             ElectronicId = id,
             PaymentDate = date.ToString("yyyy-MM-dd"),
             PaymentAmount = amount,
@@ -213,8 +209,8 @@ public class MER : Posrednik
         {
             Username,
             Password,
-            CompanyId = OIB,
-            SoftwareId = "MAES.Fiskal2",
+            CompanyId,
+            SoftwareId,
             ElectronicId = id,
             RejectionDate = DateTime.Now,
             RejectionReasonDescription = opis,
