@@ -28,11 +28,11 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | Dohvat ulaznih računa | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
 | Dohvat izlaznih računa | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
-| Dohvat UBL sadržaja | ✅ | ✅ | ❌ | ✅ | ✅ | 🚧 | ⚠️ |
-| Dohvat PDF sadržaja | ✅ | ✅ | ❌ | ❌ | ❌ | 🚧 | ❌ |
-| Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | 🚧 | 🚧 | 🚧 | ⚠️ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌ | ❌ | 🚧 | 🚧 | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | ✅ | 🚧 | 🚧 | ⚠️ |
 | Evidentiranje uplate | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
-| Odbijanje računa | ✅ | ✅ | ❌ | ✅ | ✅ | 🚧 | ⚠️ |
+| Odbijanje računa | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
 | Prihvaćanje računa | ❌ | 🚧 | ❌ | ✅ | 🚧 | 🚧 | 🚧 |
 
 * ✅ — Implementirano
