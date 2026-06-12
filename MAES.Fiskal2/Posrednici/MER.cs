@@ -86,11 +86,39 @@ public class MER : Posrednik
     /// <param name="from">Početni datum raspona.</param>
     /// <param name="to">Završni datum raspona.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override Task<IEnumerable<UlazniERacun>> UlazniListAsync(
-        DateTime from,
-        DateTime to,
-        CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
+    public override async Task<IEnumerable<UlazniERacun>> UlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    {
+        var response = await sendRequest(HttpMethod.Post, $"/apis/v2/queryInbox", new
+        {
+            Username,
+            Password,
+            CompanyId = OIB,
+            SoftwareId = "MAES.Fiskal2",
+            From = from.ToString("yyyy-MM-dd"),
+            To = to.ToString("yyyy-MM-dd")
+        }, cancellationToken);
+
+        List<UlazniERacun> racuni = [];
+        foreach (var item in JsonSerializer.Deserialize<List<object>>(response) ?? [])
+        {
+            racuni.Add(new UlazniERacun
+            {
+                Id = item.GetType().GetProperty("ElectronicId")?.GetValue(item)?.ToString() ?? "",
+                Datum = DateTime.Parse(item.GetType().GetProperty("Sent")?.GetValue(item)?.ToString() ?? ""),
+                Partner = item.GetType().GetProperty("SenderBusinessName")?.GetValue(item)?.ToString() ?? "",
+                PartnerOIB = item.GetType().GetProperty("SenderBusinessNumber")?.GetValue(item)?.ToString() ?? "",
+                Broj = item.GetType().GetProperty("DocumentNr")?.GetValue(item)?.ToString() ?? "",
+                Status = (int.TryParse(item.GetType().GetProperty("StatusId")?.GetValue(item)?.ToString() ?? "0", out var status) ? status : 0) switch
+                {
+                    20 => UlazniERacunStatus.Zaprimljeno,
+                    30 => UlazniERacunStatus.Odobreno,
+                    40 => UlazniERacunStatus.Odbijeno,
+                    _ => UlazniERacunStatus.Likvidirano
+                }
+            });
+        }
+        return racuni;
+    }
 
     /// <summary>
     /// Dohvat izlaznog UBL dokumenta.
@@ -115,11 +143,39 @@ public class MER : Posrednik
     /// <param name="from">Početni datum raspona.</param>
     /// <param name="to">Završni datum raspona.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(
-        DateTime from,
-        DateTime to,
-        CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
+    public override async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
+    {
+         var response = await sendRequest(HttpMethod.Post, $"/apis/v2/queryOutbox", new
+        {
+            Username,
+            Password,
+            CompanyId = OIB,
+            SoftwareId = "MAES.Fiskal2",
+            From = from.ToString("yyyy-MM-dd"),
+            To = to.ToString("yyyy-MM-dd")
+        }, cancellationToken);
+
+        List<IzlazniERacun> racuni = [];
+        foreach (var item in JsonSerializer.Deserialize<List<object>>(response) ?? [])
+        {
+            racuni.Add(new IzlazniERacun
+            {
+                Id = item.GetType().GetProperty("ElectronicId")?.GetValue(item)?.ToString() ?? "",
+                Datum = DateTime.Parse(item.GetType().GetProperty("Sent")?.GetValue(item)?.ToString() ?? ""),
+                PartnerNaziv = item.GetType().GetProperty("RecipientBusinessName")?.GetValue(item)?.ToString() ?? "",
+                PartnerOIB = item.GetType().GetProperty("RecipientBusinessNumber")?.GetValue(item)?.ToString() ?? "",
+                Broj = item.GetType().GetProperty("DocumentNr")?.GetValue(item)?.ToString() ?? "",
+                Status = (int.TryParse(item.GetType().GetProperty("StatusId")?.GetValue(item)?.ToString() ?? "0", out var status) ? status : 0) switch
+                {
+                    20 => IzlazniERacunStatus.Dostavljeno,
+                    30 => IzlazniERacunStatus.Poslano,
+                    40 => IzlazniERacunStatus.Odbijeno,
+                    _ => IzlazniERacunStatus.Greška
+                }
+            });
+        }
+        return racuni;
+    }
 
     /// <summary>
     /// Evidentira uplatu za račun po njegovom identifikatoru.
@@ -175,7 +231,8 @@ public class MER : Posrednik
     {
         using var request = new HttpRequestMessage(method, uri);
 
-        if(body != null) request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+        if(body != null)
+            request.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
 
         return await SendRequest(request, token);
     }
