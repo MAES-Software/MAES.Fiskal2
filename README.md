@@ -26,14 +26,14 @@ U `Posrednici/` direktoriju nalaze se konkretne implementacije
 
 | Značajka / posrednik | `Super` | `EPoslovanje` | `Fina` | `MER` | `Redok` | `Tvoj eRačun` | `Doku` |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| Dohvat ulaznih računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
-| Dohvat izlaznih računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
-| Dohvat UBL sadržaja | ✅ | ✅ | ❌ | ⚠️ | 🚧 | 🚧 | ⚠️ |
-| Dohvat PDF sadržaja | ✅ | ✅ | ❌ | ❌ | 🚧 | 🚧 | ❌ |
-| Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | ⚠️ | 🚧 | 🚧 | ⚠️ |
-| Evidentiranje uplate | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
-| Odbijanje računa | ✅ | ✅ | ❌ | 🚧 | 🚧 | 🚧 | ⚠️ |
-| Prihvaćanje računa | ❌ | 🚧 | ❌ | 🚧 | 🚧 | 🚧 | 🚧 |
+| Dohvat ulaznih računa | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
+| Dohvat izlaznih računa | ✅ | ✅ | ❌ | ✅ | 🚧 | 🚧 | ⚠️ |
+| Dohvat UBL sadržaja | ✅ | ✅ | ❌ | ⚠️ | ✅ | 🚧 | ⚠️ |
+| Dohvat PDF sadržaja | ✅ | ✅ | ❌ | ❌ | ❌ | 🚧 | ❌ |
+| Evidentiranje UBL dokumenta | ✅ | ✅ | ⚠️ | ✅ | 🚧 | 🚧 | ⚠️ |
+| Evidentiranje uplate | ✅ | ✅ | ❌ | 🚧 | ✅ | 🚧 | ⚠️ |
+| Odbijanje računa | ✅ | ✅ | ❌ | 🚧 | ✅ | 🚧 | ⚠️ |
+| Prihvaćanje računa | ❌ | 🚧 | ❌ | ✅ | 🚧 | 🚧 | 🚧 |
 
 * ✅ — Implementirano
 * ⚠️ — Nije testirano/Ne prolazi testove
