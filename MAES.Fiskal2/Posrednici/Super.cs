@@ -162,11 +162,19 @@ public class Super : Posrednik
     /// </summary>
     /// <param name="ubl">UBL XML dokument ulaznog računa.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default) => await postRequestAsync("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
+    public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default)
     {
-        ["Base64EncodedUbl"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl)),
-        ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
-    }, cancellationToken);
+        var json = await postRequestAsync("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
+        {
+            ["Base64EncodedUbl"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl)),
+            ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
+        }, cancellationToken);
+
+        if(json.RootElement.TryGetProperty("Guid", out var el) && el.GetString() is string guid)
+        {
+            Console.WriteLine($"Super.hr račun prijavljen {guid}");
+        }
+    }
 
     /// <summary>
     /// Evidentira uplatu za račun po njegovom identifikatoru.
