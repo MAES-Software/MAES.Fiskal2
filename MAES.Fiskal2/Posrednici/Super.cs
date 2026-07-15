@@ -233,6 +233,7 @@ public class Super : Posrednik
 
         var jsonDocument = JsonDocument.Parse(content);
         if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
+        if(jsonDocument.RootElement.TryGetProperty("ErrorMessage", out var errorMessage2) && errorMessage2.GetString() is string error2 && !string.IsNullOrWhiteSpace(error2)) throw new Exception(error2);
         return jsonDocument;
     }
 }
