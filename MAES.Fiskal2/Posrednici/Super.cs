@@ -174,6 +174,11 @@ public class Super : Posrednik
         {
             Console.WriteLine($"Super.hr račun prijavljen {guid}");
         }
+        else if(json.RootElement.TryGetProperty("guid", out var el2) && el2.GetString() is string guid2)
+        {
+            Console.WriteLine($"Super.hr račun prijavljen {guid2}");
+        }
+        else throw new Exception("nema guid racun");
     }
 
     /// <summary>
