@@ -164,7 +164,7 @@ public class Super : Posrednik
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     public override async Task EvidentirajUBLAsync(string ubl, CancellationToken cancellationToken = default)
     {
-        var json = await postRequestAsync("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
+        var json = await postRequestAsync("api/SendingInvoice/SendSendingInvoiceUbl", new Dictionary<string, string>
         {
             ["Base64EncodedUbl"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl)),
             ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
