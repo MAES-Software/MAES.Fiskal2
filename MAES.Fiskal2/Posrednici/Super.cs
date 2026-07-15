@@ -178,7 +178,7 @@ public class Super : Posrednik
         {
             Console.WriteLine($"Super.hr račun prijavljen {guid2}");
         }
-        else throw new Exception("nema guid racun");
+        else throw new Exception(json.ToString());
     }
 
     /// <summary>
@@ -247,6 +247,7 @@ public class Super : Posrednik
         var jsonDocument = JsonDocument.Parse(content);
         if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
         if(jsonDocument.RootElement.TryGetProperty("ErrorMessage", out var errorMessage2) && errorMessage2.GetString() is string error2 && !string.IsNullOrWhiteSpace(error2)) throw new Exception(error2);
+        if(jsonDocument.RootElement.TryGetProperty("error_message", out var errorMessage3) && errorMessage3.GetString() is string error3 && !string.IsNullOrWhiteSpace(error3)) throw new Exception(error3);
         return jsonDocument;
     }
 }
