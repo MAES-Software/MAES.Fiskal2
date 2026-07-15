@@ -178,7 +178,7 @@ public class Super : Posrednik
         {
             Console.WriteLine($"Super.hr račun prijavljen {guid2}");
         }
-        else throw new Exception(json.ToString());
+        else throw new Exception(json.RootElement.GetRawText());
     }
 
     /// <summary>
