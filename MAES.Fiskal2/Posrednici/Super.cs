@@ -74,18 +74,22 @@ public class Super : Posrednik
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
 
-        return doc.RootElement.GetProperty("invoices").EnumerateArray().Select(x => new UlazniERacun
+        return doc.RootElement.GetProperty("invoices").EnumerateArray().Select(x =>
         {
-            Broj = x.GetProperty("UniqueId").GetString() ?? "",
-            Datum = x.GetProperty("IssueDate").GetDateTime(),
-            Partner = x.GetProperty("Supplier").GetString() ?? "",
-            PartnerOIB = x.GetProperty("SupplierOib").GetString() ?? "",
-            PartnerAdresa =
-                $"{x.GetProperty("SupplierAddress").GetString()}, " +
-                $"{x.GetProperty("SupplierZip").GetString()} " +
-                $"{x.GetProperty("SupplierCity").GetString()}",
-            Id = x.GetProperty("Guid").GetGuid().ToString(),
-            Status = UlazniERacunStatus.Zaprimljeno // treba popravit
+            var time = x.GetProperty("issueTime").GetString()!.Split(':');
+            return new UlazniERacun
+            {
+                Broj = x.GetProperty("uniqueId").GetString() ?? "",
+                Datum = x.GetProperty("issueDate").GetDateTime().AddHours(Convert.ToInt32(time[0])).AddMinutes(Convert.ToInt32(time[1])),
+                Partner = x.GetProperty("supplier").GetString() ?? "",
+                PartnerOIB = x.GetProperty("supplierOib").GetString() ?? "",
+                PartnerAdresa =
+                    $"{x.GetProperty("supplierAddress").GetString()}, " +
+                    $"{x.GetProperty("supplierZip").GetString()} " +
+                    $"{x.GetProperty("supplierCity").GetString()}",
+                Id = x.GetProperty("guid").GetGuid().ToString(),
+                Status = UlazniERacunStatus.Zaprimljeno // treba popravit
+            };
         });
     }
 
@@ -142,18 +146,24 @@ public class Super : Posrednik
             ["DateTo"] = to.ToString("yyyy-MM-dd")
         }, cancellationToken);
 
-        return doc.RootElement.GetProperty("sendingInvoices").EnumerateArray().Select(x => new IzlazniERacun
+        return doc.RootElement.GetProperty("sendingInvoices").EnumerateArray().Select(x =>
         {
-            Broj = x.GetProperty("UniqueId").GetString() ?? "",
-            Datum = x.GetProperty("IssueDate").GetDateTime(),
-            PartnerNaziv = x.GetProperty("Supplier").GetString() ?? "",
-            PartnerOIB = x.GetProperty("SupplierOib").GetString() ?? "",
-            PartnerAdresa =
-                $"{x.GetProperty("SupplierAddress").GetString()}, " +
-                $"{x.GetProperty("SupplierZip").GetString()} " +
-                $"{x.GetProperty("SupplierCity").GetString()}",
-            Id = x.GetProperty("Guid").GetGuid().ToString(),
-            Status = IzlazniERacunStatus.Poslano // treba popravit
+            var time = x.GetProperty("issueTime").GetString()!.Split(':');
+            return new IzlazniERacun
+            {
+                Id = x.GetProperty("guid").GetGuid().ToString(),
+                Broj = x.GetProperty("number").GetString() ?? "",
+                Datum = x.GetProperty("issueDate").GetDateTime().AddHours(int.Parse(time[0])).AddMinutes(int.Parse(time[1])),
+                PartnerNaziv = x.GetProperty("customer").GetString() ?? "",
+                PartnerOIB = x.GetProperty("customerOib").GetString() ?? "",
+                PartnerAdresa = $"{x.GetProperty("customerAddress").GetString()}, {x.GetProperty("customerZip").GetString()} {x.GetProperty("customerCity").GetString()}",
+                NacinPlacanjaId = x.GetProperty("paymentId").GetString() ?? "",
+                Iznos = x.GetProperty("totalAmount").GetDouble(),
+                Preplaćeno = x.GetProperty("prepaidAmount").GetDouble(),
+                ZaPlatiti = x.GetProperty("payableAmount").GetDouble(),
+                ProfileId = x.GetProperty("profileId").GetString() ?? "",
+                Status = (IzlazniERacunStatus)x.GetProperty("sendingInvoiceStatus").GetInt32()
+            };
         });
     }
 
@@ -169,16 +179,6 @@ public class Super : Posrednik
             ["Base64EncodedUbl"] = Convert.ToBase64String(Encoding.UTF8.GetBytes(ubl)),
             ["UblDocumentType"] = "1", // 1 = račun, 2 = odobrenje
         }, cancellationToken);
-
-        if(json.RootElement.TryGetProperty("Guid", out var el) && el.GetString() is string guid)
-        {
-            Console.WriteLine($"Super.hr račun prijavljen {guid}");
-        }
-        else if(json.RootElement.TryGetProperty("guid", out var el2) && el2.GetString() is string guid2)
-        {
-            Console.WriteLine($"Super.hr račun prijavljen {guid2}");
-        }
-        else throw new Exception(json.RootElement.GetRawText());
     }
 
     /// <summary>
@@ -246,8 +246,6 @@ public class Super : Posrednik
 
         var jsonDocument = JsonDocument.Parse(content);
         if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
-        if(jsonDocument.RootElement.TryGetProperty("ErrorMessage", out var errorMessage2) && errorMessage2.GetString() is string error2 && !string.IsNullOrWhiteSpace(error2)) throw new Exception(error2);
-        if(jsonDocument.RootElement.TryGetProperty("error_message", out var errorMessage3) && errorMessage3.GetString() is string error3 && !string.IsNullOrWhiteSpace(error3)) throw new Exception(error3);
         return jsonDocument;
     }
 }

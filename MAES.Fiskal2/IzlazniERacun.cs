@@ -41,6 +41,33 @@ public class IzlazniERacun
     /// Trenutni status izlaznog računa.
     /// </summary>
     public IzlazniERacunStatus Status { get; set; }
+
+    /// <summary>
+    /// Ukupan iznos računa.
+    /// </summary>
+    public double Iznos { get; set; }
+
+    /// <summary>
+    /// Iznos koji je već podmiren (preplaćeni ili unaprijed plaćeni iznos).
+    /// </summary>
+    public double Preplaćeno { get; set; }
+
+    /// <summary>
+    /// Preostali iznos za plaćanje.
+    /// </summary>
+    public double ZaPlatiti { get; set; }
+
+    /// <summary>
+    /// Identifikator načina plaćanja.
+    /// Primjer: 'TRANSAKCIJSKIM RAČUNOM'.
+    /// </summary>
+    public string NacinPlacanjaId { get; set; } = "";
+
+    /// <summary>
+    /// Identifikator UBL profila e-računa.
+    /// Primjer: 'P1'.
+    /// </summary>
+    public string ProfileId { get; set; } = "";
 }
 
 /// <summary>
