@@ -79,7 +79,7 @@ public class Super : Posrednik
             var time = x.GetProperty("issueTime").GetString()!.Split(':');
             return new UlazniERacun
             {
-                Broj = x.GetProperty("uniqueId").GetString() ?? "",
+                Broj = x.GetProperty("number").GetString() ?? "",
                 Datum = x.GetProperty("issueDate").GetDateTime().AddHours(Convert.ToInt32(time[0])).AddMinutes(Convert.ToInt32(time[1])),
                 Partner = x.GetProperty("supplier").GetString() ?? "",
                 PartnerOIB = x.GetProperty("supplierOib").GetString() ?? "",
@@ -88,7 +88,11 @@ public class Super : Posrednik
                     $"{x.GetProperty("supplierZip").GetString()} " +
                     $"{x.GetProperty("supplierCity").GetString()}",
                 Id = x.GetProperty("guid").GetGuid().ToString(),
-                Status = UlazniERacunStatus.Zaprimljeno // treba popravit
+                NacinPlacanjaId = x.GetProperty("paymentId").GetString() ?? "",
+                Iznos = x.GetProperty("totalAmount").GetDouble(),
+                Preplaćeno = x.GetProperty("prepaidAmount").GetDouble(),
+                ZaPlatiti = x.GetProperty("payableAmount").GetDouble(),
+                Status = (UlazniERacunStatus)x.GetProperty("invoiceStatus").GetInt32()
             };
         });
     }
