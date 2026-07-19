@@ -220,8 +220,7 @@ public class Super : Posrednik
 
     async Task<JsonDocument> postRequestAsync(string uri, Dictionary<string, string> body, CancellationToken cancellationToken = default)
     {
-        // dohvati token ako ga nema ili je istekao
-        if (token == null || DateTime.Now >= token.Value.Value)
+        if (token is not KeyValuePair<string, DateTime> jwt || DateTime.Now >= jwt.Value)
         {
             using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
             tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -231,11 +230,9 @@ public class Super : Posrednik
                 new ("password", Password)
             ]);
 
-            var tokenContent = await SendRequest(tokenRequest, cancellationToken);
+            using var doc = JsonDocument.Parse(await SendRequest(tokenRequest, cancellationToken));
 
-            using var doc = JsonDocument.Parse(tokenContent);
-
-            token = new KeyValuePair<string, DateTime>(
+            token = jwt = new KeyValuePair<string, DateTime>(
                 doc.RootElement.GetProperty("access_token").GetString()!,
                 DateTime.Now.AddSeconds(doc.RootElement.GetProperty("expires_in").GetInt32() - 60)
             );
@@ -246,14 +243,13 @@ public class Super : Posrednik
 
         using var request = new HttpRequestMessage(HttpMethod.Post, uri);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Value.Key);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", jwt.Key);
         request.Content = new FormUrlEncodedContent(body);
-        request.Content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
 
-        var content = await SendRequest(request, cancellationToken);
+        var jsonDocument = JsonDocument.Parse(await SendRequest(request, cancellationToken));
 
-        var jsonDocument = JsonDocument.Parse(content);
         if(jsonDocument.RootElement.TryGetProperty("errorMessage", out var errorMessage) && errorMessage.GetString() is string error && !string.IsNullOrWhiteSpace(error)) throw new Exception(error);
+        
         return jsonDocument;
     }
 }
