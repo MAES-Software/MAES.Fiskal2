@@ -57,14 +57,14 @@ public class EPoslovanje : Posrednik
 
         foreach (var item in doc.RootElement.EnumerateArray())
         {
-            list.Add(new UlazniERacun
+            list.Add(new UlazniERacun(this)
             {
                 Id = item.GetProperty("id").GetInt64().ToString(),
                 Datum = item.GetProperty("issuedOn").GetDateTime(),
                 Broj = item.GetProperty("documentId").GetString()!,
                 Status = UlazniERacunStatus.Zaprimljeno, // TODO: ovo treba popravit
-                Partner = item.GetProperty("customerPartyName").GetString()!,
-                PartnerOIB = item.GetProperty("customerPartyVATId").GetString()!
+                SubjektNaziv = item.GetProperty("customerPartyName").GetString()!,
+                SubjektOIB = item.GetProperty("customerPartyVATId").GetString()!
             });
         }
 
@@ -98,13 +98,13 @@ public class EPoslovanje : Posrednik
 
         foreach (var item in doc.RootElement.EnumerateArray())
         {
-            list.Add(new IzlazniERacun
+            list.Add(new IzlazniERacun(this)
             {
                 Id = item.GetProperty("id").GetInt64().ToString(),
                 Broj = item.GetProperty("documentId").GetString()!,
                 Datum = item.GetProperty("issuedOn").GetDateTime(),
-                PartnerNaziv = item.GetProperty("customerPartyName").GetString()!,
-                PartnerOIB = item.GetProperty("customerPartyVATId").GetString()!,
+                SubjektNaziv = item.GetProperty("customerPartyName").GetString() ?? "",
+                SubjektOIB = item.GetProperty("customerPartyVATId").GetString() ?? "",
                 Status = IzlazniERacunStatus.Poslano // TODO: ovo treba popravit
             });
         }
@@ -124,7 +124,7 @@ public class EPoslovanje : Posrednik
     /// <summary>
     /// Evidentira uplatu za račun.
     /// </summary>
-    public override Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default)
+    public override Task EvidentirajUplatuAsync(string id, DateTime date, double amount, ERacunNacinPlacanja paymentMethod, CancellationToken token = default)
     {
         var status = amount > 0 ? 8 : 7; // 8: partialno, 7: potpuno
         return changeStatusAsync(id, status, partialPaymentAmount: status == 8 ? amount : null, token: token);

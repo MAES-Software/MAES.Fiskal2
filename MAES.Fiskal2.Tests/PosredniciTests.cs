@@ -19,11 +19,6 @@ public class PosredniciTests
             ApiKey = Environment.GetEnvironmentVariable("EPOSLOVANJE_API_KEY") ?? throw new InvalidOperationException("EPOSLOVANJE_API_KEY environment variable is not set."),
             IsDev = true
         },
-        new Doku
-        {
-            ApiKey = Environment.GetEnvironmentVariable("DOKU_API_KEY") ?? throw new InvalidOperationException("DOKU_API_KEY environment variable is not set."),
-            IsDev = true
-        },
         new MER
         {
             Username = Environment.GetEnvironmentVariable("MER_USERNAME") ?? throw new InvalidOperationException("MER_USERNAME environment variable is not set."),
@@ -37,13 +32,11 @@ public class PosredniciTests
     [Fact]
     public async Task EvidentirajUBL()
     {
-        var ubl = File.ReadAllText("ubl.xml");
-
-        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        foreach (var posrednik in posrednici)
         {
             try
             {
-                await posrednik.EvidentirajUBLAsync(ubl);
+                await posrednik.EvidentirajUBLAsync(File.ReadAllText("ubl.xml"));
                 Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUBL OK");
             }
             catch (Exception ex)
@@ -54,17 +47,14 @@ public class PosredniciTests
     }
 
     [Fact]
-    public async Task DohvatiIzlazneRacune()
+    public async Task IzlazniRacuni()
     {
-        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        foreach (var posrednik in posrednici)
         {
             try
             {
-                var izlazni = await posrednik.IzlazniListAsync(
-                    DateTime.UtcNow.AddDays(-30),
-                    DateTime.UtcNow);
-
-                Console.WriteLine($"{posrednik.GetType().Name}: IzlazniList OK ({izlazni.Count()})");
+                await posrednik.IzlazniListAsync(DateTime.UtcNow.AddDays(-30), DateTime.UtcNow);
+                Console.WriteLine($"{posrednik.GetType().Name}: IzlazniList OK");
             }
             catch (Exception ex)
             {
@@ -74,28 +64,19 @@ public class PosredniciTests
     }
 
     [Fact]
-    public async Task DohvatiPrviIzlazniPdfIUBL()
+    public async Task DohvatiIzlazniPdfUBL()
     {
-        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        foreach (var posrednik in posrednici)
         {
             try
             {
-                var izlazni = await posrednik.IzlazniListAsync(
-                    DateTime.UtcNow.AddDays(-30),
-                    DateTime.UtcNow);
-
-                var first = izlazni.FirstOrDefault();
-
-                if (first == null)
+                if ((await posrednik.IzlazniListAsync(DateTime.MinValue, DateTime.MaxValue)).FirstOrDefault() is IzlazniERacun racun)
                 {
-                    Console.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa");
-                    continue;
+                    await racun.DohvatiPdfAsync();
+                    await racun.DohvatiUBLAsync();
+                    Console.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL OK");
                 }
-
-                await posrednik.IzlazniPdfAsync(first.Id);
-                await posrednik.IzlazniUBLAsync(first.Id);
-
-                Console.WriteLine($"{posrednik.GetType().Name}: Izlazni PDF + UBL OK");
+                else Console.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa");
             }
             catch (Exception ex)
             {
@@ -107,29 +88,16 @@ public class PosredniciTests
     [Fact]
     public async Task EvidentirajUplatu()
     {
-        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        foreach (var posrednik in posrednici)
         {
             try
             {
-                var izlazni = await posrednik.IzlazniListAsync(
-                    DateTime.UtcNow.AddDays(-30),
-                    DateTime.UtcNow);
-
-                var first = izlazni.FirstOrDefault();
-
-                if (first == null)
+                if ((await posrednik.IzlazniListAsync(DateTime.MinValue, DateTime.MaxValue)).FirstOrDefault() is IzlazniERacun racun)
                 {
-                    Console.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa za uplatu");
-                    continue;
+                    await racun.EvidentirajUplatuAsync(DateTime.Now, 100, ERacunNacinPlacanja.TransakcijskiRacun);
+                    Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu OK");
                 }
-
-                await posrednik.EvidentirajUplatuAsync(
-                    first.Id,
-                    DateTime.UtcNow,
-                    100,
-                    NacinPlacanja.TransakcijskiRaCun);
-
-                Console.WriteLine($"{posrednik.GetType().Name}: EvidentirajUplatu OK");
+                else Console.WriteLine($"{posrednik.GetType().Name}: nema izlaznih računa");
             }
             catch (Exception ex)
             {
@@ -141,26 +109,34 @@ public class PosredniciTests
     [Fact]
     public async Task UlazniRacuni()
     {
-        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        foreach (var posrednik in posrednici)
         {
             try
             {
-                var ulazni = await posrednik.UlazniListAsync(
-                    DateTime.UtcNow.AddDays(-30),
-                    DateTime.UtcNow);
+                await posrednik.UlazniListAsync(DateTime.MinValue, DateTime.MaxValue);
+                Console.WriteLine($"{posrednik.GetType().Name}: UlazniList OK");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{posrednik.GetType().Name}: UlazniList FAIL {ex.Message}");
+            }
+        }
+    }
 
-                var first = ulazni.FirstOrDefault();
-
-                if (first == null)
+    [Fact]
+    public async Task DohvatiUlazniPdfUBL()
+    {
+        foreach (var posrednik in posrednici)
+        {
+            try
+            {
+                if ((await posrednik.UlazniListAsync(DateTime.MinValue, DateTime.MaxValue)).FirstOrDefault() is UlazniERacun racun)
                 {
-                    Console.WriteLine($"{posrednik.GetType().Name}: nema ulaznih računa");
-                    continue;
+                    await racun.DohvatiPdfAsync();
+                    await racun.DohvatiUBLAsync();
+                    Console.WriteLine($"{posrednik.GetType().Name}: Ulazni PDF + UBL OK");
                 }
-
-                await posrednik.UlazniPdfAsync(first.Id);
-                await posrednik.UlazniUBLAsync(first.Id);
-
-                Console.WriteLine($"{posrednik.GetType().Name}: Ulazni PDF + UBL OK");
+                else Console.WriteLine($"{posrednik.GetType().Name}: nema ulaznih računa");
             }
             catch (Exception ex)
             {
@@ -172,28 +148,16 @@ public class PosredniciTests
     [Fact]
     public async Task OdbijPrviUlazniRacun()
     {
-        foreach (var posrednik in posrednici.Where(p => p is not Fina))
+        foreach (var posrednik in posrednici)
         {
             try
             {
-                var ulazni = await posrednik.UlazniListAsync(
-                    DateTime.UtcNow.AddDays(-30),
-                    DateTime.UtcNow);
-
-                var first = ulazni.FirstOrDefault();
-
-                if (first == null)
+                if ((await posrednik.UlazniListAsync(DateTime.MinValue, DateTime.MaxValue)).FirstOrDefault() is UlazniERacun racun)
                 {
-                    Console.WriteLine($"{posrednik.GetType().Name}: nema ulaznih za odbijanje");
-                    continue;
+                    await racun.OdbijAsync(RazlogOdbijanja.NeusklađenostKojaNeUtjeceNaObracunPoreza, "Krivi podaci o tvrtki");
+                    Console.WriteLine($"{posrednik.GetType().Name}: OdbijRacun OK");
                 }
-
-                await posrednik.OdbijRacunAsync(
-                    first.Id,
-                    RazlogOdbijanja.NeusklađenostKojaNeUtjeceNaObracunPoreza,
-                    "Nedostaje OIB");
-
-                Console.WriteLine($"{posrednik.GetType().Name}: OdbijRacun OK");
+                else Console.WriteLine($"{posrednik.GetType().Name}: nema ulaznih računa");
             }
             catch (Exception ex)
             {

@@ -11,7 +11,6 @@ namespace MAES.Fiskal2;
 [JsonDerivedType(typeof(Super), "Super")]
 [JsonDerivedType(typeof(EPoslovanje), "EPoslovanje")]
 [JsonDerivedType(typeof(Fina), "Fina")]
-[JsonDerivedType(typeof(Doku), "Doku")]
 [JsonDerivedType(typeof(MER), "MER")]
 public abstract class Posrednik(string urlProd, string urlDev)
 {
@@ -36,7 +35,7 @@ public abstract class Posrednik(string urlProd, string urlDev)
     /// <param name="amount">Iznos uplate.</param>
     /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="token">Token za otkazivanje operacije.</param>
-    public virtual Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default) =>
+    public virtual Task EvidentirajUplatuAsync(string id, DateTime date, double amount, ERacunNacinPlacanja paymentMethod, CancellationToken token = default) =>
         throw new NotImplementedException();
 
     /// <summary>

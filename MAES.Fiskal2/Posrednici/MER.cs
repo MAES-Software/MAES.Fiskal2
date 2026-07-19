@@ -97,12 +97,12 @@ public class MER : Posrednik
         List<UlazniERacun> racuni = [];
         foreach (var item in JsonSerializer.Deserialize<List<object>>(response) ?? [])
         {
-            racuni.Add(new UlazniERacun
+            racuni.Add(new UlazniERacun(this)
             {
                 Id = item.GetType().GetProperty("ElectronicId")?.GetValue(item)?.ToString() ?? "",
                 Datum = DateTime.Parse(item.GetType().GetProperty("Sent")?.GetValue(item)?.ToString() ?? ""),
-                Partner = item.GetType().GetProperty("SenderBusinessName")?.GetValue(item)?.ToString() ?? "",
-                PartnerOIB = item.GetType().GetProperty("SenderBusinessNumber")?.GetValue(item)?.ToString() ?? "",
+                SubjektNaziv = item.GetType().GetProperty("SenderBusinessName")?.GetValue(item)?.ToString() ?? "",
+                SubjektOIB = item.GetType().GetProperty("SenderBusinessNumber")?.GetValue(item)?.ToString() ?? "",
                 Broj = item.GetType().GetProperty("DocumentNr")?.GetValue(item)?.ToString() ?? "",
                 Status = (int.TryParse(item.GetType().GetProperty("StatusId")?.GetValue(item)?.ToString() ?? "0", out var status) ? status : 0) switch
                 {
@@ -154,12 +154,12 @@ public class MER : Posrednik
         List<IzlazniERacun> racuni = [];
         foreach (var item in JsonSerializer.Deserialize<List<object>>(response) ?? [])
         {
-            racuni.Add(new IzlazniERacun
+            racuni.Add(new IzlazniERacun(this)
             {
                 Id = item.GetType().GetProperty("ElectronicId")?.GetValue(item)?.ToString() ?? "",
                 Datum = DateTime.Parse(item.GetType().GetProperty("Sent")?.GetValue(item)?.ToString() ?? ""),
-                PartnerNaziv = item.GetType().GetProperty("RecipientBusinessName")?.GetValue(item)?.ToString() ?? "",
-                PartnerOIB = item.GetType().GetProperty("RecipientBusinessNumber")?.GetValue(item)?.ToString() ?? "",
+                SubjektNaziv = item.GetType().GetProperty("RecipientBusinessName")?.GetValue(item)?.ToString() ?? "",
+                SubjektOIB = item.GetType().GetProperty("RecipientBusinessNumber")?.GetValue(item)?.ToString() ?? "",
                 Broj = item.GetType().GetProperty("DocumentNr")?.GetValue(item)?.ToString() ?? "",
                 Status = (int.TryParse(item.GetType().GetProperty("StatusId")?.GetValue(item)?.ToString() ?? "0", out var status) ? status : 0) switch
                 {
@@ -181,7 +181,7 @@ public class MER : Posrednik
     /// <param name="amount">Iznos uplate.</param>
     /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
+    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, ERacunNacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
     {
         await sendRequest(HttpMethod.Post, $"/api/fiscalization/markPaid", new
         {

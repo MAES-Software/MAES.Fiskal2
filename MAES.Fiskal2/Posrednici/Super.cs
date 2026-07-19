@@ -77,21 +77,19 @@ public class Super : Posrednik
         return doc.RootElement.GetProperty("invoices").EnumerateArray().Select(x =>
         {
             var time = x.GetProperty("issueTime").GetString()!.Split(':');
-            return new UlazniERacun
+            return new UlazniERacun(this)
             {
                 Broj = x.GetProperty("number").GetString() ?? "",
                 Datum = x.GetProperty("issueDate").GetDateTime().AddHours(Convert.ToInt32(time[0])).AddMinutes(Convert.ToInt32(time[1])),
-                Partner = x.GetProperty("supplier").GetString() ?? "",
-                PartnerOIB = x.GetProperty("supplierOib").GetString() ?? "",
-                PartnerAdresa =
-                    $"{x.GetProperty("supplierAddress").GetString()}, " +
-                    $"{x.GetProperty("supplierZip").GetString()} " +
-                    $"{x.GetProperty("supplierCity").GetString()}",
+                SubjektNaziv = x.GetProperty("supplier").GetString() ?? "",
+                SubjektOIB = x.GetProperty("supplierOib").GetString() ?? "",
+                SubjektAdresa = x.GetProperty("supplierAddress").GetString() ?? "",
+                SubjektMjesto = x.GetProperty("supplierCity").GetString() ?? "",
+                SubjektPostanskiBroj = x.GetProperty("supplierZip").GetString() ?? "",
+                PozivNaBroj = x.GetProperty("paymentId").GetString() ?? "",
                 Id = x.GetProperty("guid").GetGuid().ToString(),
-                NacinPlacanjaId = x.GetProperty("paymentId").GetString() ?? "",
                 Iznos = x.GetProperty("totalAmount").GetDouble(),
                 Preplaćeno = x.GetProperty("prepaidAmount").GetDouble(),
-                ZaPlatiti = x.GetProperty("payableAmount").GetDouble(),
                 Status = (UlazniERacunStatus)x.GetProperty("invoiceStatus").GetInt32()
             };
         });
@@ -142,7 +140,7 @@ public class Super : Posrednik
     /// <param name="to">Krajnji datum vremenskog raspona.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
     /// <returns>Popis izlaznih e-računa.</returns>
-    public override async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken)
+    public override async Task<IEnumerable<IzlazniERacun>> IzlazniListAsync(DateTime from, DateTime to, CancellationToken cancellationToken = default)
     {
         var doc = await postRequestAsync("api/SendingInvoice/GetSendingInvoiceList", new Dictionary<string, string>
         {
@@ -153,18 +151,19 @@ public class Super : Posrednik
         return doc.RootElement.GetProperty("sendingInvoices").EnumerateArray().Select(x =>
         {
             var time = x.GetProperty("issueTime").GetString()!.Split(':');
-            return new IzlazniERacun
+            return new IzlazniERacun(this)
             {
                 Id = x.GetProperty("guid").GetGuid().ToString(),
                 Broj = x.GetProperty("number").GetString() ?? "",
                 Datum = x.GetProperty("issueDate").GetDateTime().AddHours(int.Parse(time[0])).AddMinutes(int.Parse(time[1])),
-                PartnerNaziv = x.GetProperty("customer").GetString() ?? "",
-                PartnerOIB = x.GetProperty("customerOib").GetString() ?? "",
-                PartnerAdresa = $"{x.GetProperty("customerAddress").GetString()}, {x.GetProperty("customerZip").GetString()} {x.GetProperty("customerCity").GetString()}",
-                NacinPlacanjaId = x.GetProperty("paymentId").GetString() ?? "",
+                SubjektNaziv = x.GetProperty("customer").GetString() ?? "",
+                SubjektOIB = x.GetProperty("customerOib").GetString() ?? "",
+                SubjektAdresa = x.GetProperty("customerAddress").GetString() ?? "",
+                SubjektPostanskiBroj = x.GetProperty("customerZip").GetString() ?? "",
+                SubjektMjesto = x.GetProperty("customerCity").GetString() ?? "",
+                PozivNaBroj = x.GetProperty("paymentId").GetString() ?? "",
                 Iznos = x.GetProperty("totalAmount").GetDouble(),
                 Preplaćeno = x.GetProperty("prepaidAmount").GetDouble(),
-                ZaPlatiti = x.GetProperty("payableAmount").GetDouble(),
                 ProfileId = x.GetProperty("profileId").GetString() ?? "",
                 Status = (IzlazniERacunStatus)x.GetProperty("sendingInvoiceStatus").GetInt32()
             };
@@ -193,7 +192,7 @@ public class Super : Posrednik
     /// <param name="amount">Iznos uplate.</param>
     /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="cancellationToken">Token za otkazivanje operacije.</param>
-    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
+    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, ERacunNacinPlacanja paymentMethod, CancellationToken cancellationToken = default)
     {
         await postRequestAsync("api/Invoice/SetInvoicePayment", new Dictionary<string, string>
         {

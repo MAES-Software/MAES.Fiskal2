@@ -1,24 +1,25 @@
 # MAES.Fiskal2
 
 [![CI/CD](https://github.com/MAES-Software/MAES.Fiskal2/actions/workflows/main.yml/badge.svg)](https://github.com/MAES-Software/MAES.Fiskal2/actions/workflows/main.yml)
-[![Contributors](https://img.shields.io/github/contributors/MAES-Software/MAES.Fiskal2)](https://github.com/MAES-Software/MAES.Fiskal2/graphs/contributors)
-[![Issues](https://img.shields.io/github/issues/MAES-Software/MAES.Fiskal2)](https://github.com/MAES-Software/MAES.Fiskal2/issues)
+![.NET Standard](https://img.shields.io/badge/.NET%20Standard-2.0-512bd4?logo=dotnet)
 [![NuGet](https://img.shields.io/nuget/v/MAES.Fiskal2.svg)](https://www.nuget.org/packages/MAES.Fiskal2/)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/MAES.Fiskal2)](https://www.nuget.org/packages/MAES.Fiskal2/)
 
-MAES.Fiskal2 je C# biblioteka za rad s Hrvatskim fiskalnim posrednicima. Cilj projekta je izraditi zajednički sloj za sve posrednike koji podržavaju razmjenu ulaznih i izlaznih e-računa u C#.
+MAES.Fiskal2 je C# biblioteka za rad s hrvatskim fiskalnim posrednicima. Omogućuje zajednički sloj za slanje, dohvat i obradu ulaznih i izlaznih e-računa preko različitih posrednika.
 
 ## Što projekt radi
 
-Projekt definira zajedničku abstraktnu klasu `Posrednik` koja opisuje osnovne operacije za posrednike fiskalizacije:
+Biblioteka definira baznu klasu `Posrednik` i konkretne implementacije za najčešće hrvatske fiskalne posrednike.
+
+Podržane operacije uključuju:
 
 - dohvat ulaznih i izlaznih e-računa
-- dohvat UBL i PDF sadržaja računa
+- dohvat UBL/XML i PDF sadržaja računa
 - evidentiranje UBL dokumenta
-- evidentiranje uplate
-- odbijanje računa
+- evidentiranje uplate za izlazni račun
+- odbijanje ulaznog računa
 
-Modeli `UlazniERacun` i `IzlazniERacun` predstavljaju minimalne informacije o računu, uključujući OIB partnera, adresu, datum i status.
+Osim toga, postoje i modeli `ERacun`, `UlazniERacun` i `IzlazniERacun` koji sadrže osnovne podatke o računu i pružaju jednostavne pomoćne metode za rad s njima.
 
 ## Trenutno podržani posrednici
 
@@ -47,11 +48,11 @@ Instalirajte paket iz NuGeta:
 dotnet add package MAES.Fiskal2
 ```
 
-Ili direktno u datoteku `.csproj`:
+Ili dodajte referencu direktno u `.csproj`:
 
 ```xml
 <ItemGroup>
-    <PackageReference Include="MAES.Fiskal2" Version="*" />
+  <PackageReference Include="MAES.Fiskal2" Version="*" />
 </ItemGroup>
 ```
 
@@ -60,7 +61,6 @@ Ili direktno u datoteku `.csproj`:
 ```csharp
 using MAES.Fiskal2.Posrednici;
 
-// Super.hr
 var super = new Super
 {
     IsDev = true,
@@ -69,28 +69,24 @@ var super = new Super
     Password = "..."
 };
 
-// ePoslovanje
-var eposl = new EPoslovanje
+var ePoslovanje = new EPoslovanje
 {
     IsDev = true,
-    OIB = "...",
-    Username = "...",
-    Password = "..."
+    ApiKey = "..."
 };
 
-// Fina
 var fina = new Fina
 {
     Certificate = ...
 };
 
-// Moj eRačun
 var mer = new MER
 {
     IsDev = true,
     Username = "...",
     Password = "...",
-    OIB = "..."
+    CompanyId = "...",
+    SoftwareId = "..."
 };
 ```
 
@@ -100,29 +96,27 @@ var mer = new MER
 // dohvat ulaznih računa u razdoblju zadnjih mj. dana
 var ulazniRacuni = posrednik.UlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
 
-var ulazniRacun = ulazniRacuni.FirstOrDefault();
-if(ulazniRacun != null)
+if(ulazniRacuni.FirstOrDefault() is UlazniERacun ulazni)
 {
     // dohvat ubl stringa i pdf byteova
-    string ubl = await posrednik.UlazniUBLAsync(ulazniRacun.Id);
-    byte[] pdf = await posrednik.UlazniPdfAsync(ulazniRacun.Id);
+    string ubl = await ulazni.DohvatiUBLAsync();
+    byte[] pdf = await ulazni.DohvatiPdfAsync();
 
     // odbija ulazni račun
-    await posrednik.OdbijRacunAsync(ulazniRacun.Id);
+    await ulazni.OdbijAsync(RazlogOdbijanja.Ostalo, "Račun odbijen radi necega");
 }
 
 // dohvat izlaznih računa u razdoblju zadnjih mj. dana
 var izlazniRacuni = posrednik.IzlazniListAsync(DateTime.Now.AddMonths(-1), DateTime.Now);
 
-var izlazniRacun = izlazniRacuni.FirstOrDefault();
-if(izlazniRacun != null)
+if(izlazniRacuni.FirstOrDefault() is IzlazniERacun izlazni)
 {
     // dohvat ubl stringa i pdf byteova
-    string ubl = await posrednik.IzlazniUBLAsync(izlazniRacun.Id);
-    byte[] pdf = await posrednik.IzlazniPdfAsync(izlazniRacun.Id);
+    string ubl = await izlazni.DohvatiUBLAsync();
+    byte[] pdf = await izlazni.DohvatiPdfAsync();
 
     // evidentira uplatu za izlazni račun
-    await posrednik.EvidentirajUplatuAsync(izlazniRacun.Id);
+    await izlazni.EvidentirajUplatuAsync(DateTime.Now, 100, ERacunNacinPlacanja.TransakcijskimRacunom);
 }
 
 // evidentiranje računa
@@ -177,22 +171,98 @@ Abstraktna klasa `Posrednik` nudi sljedeće metode:
 
     Odbija ulazni eRačun
 
-## Izgradnja i pakiranje
+UlazniERacun i IzlazniERacun imaju na sebi metode koje su vezane za taj specifičan e-račun (tipa izlazni ima izlazni.EvidentirajUplatuAsync, i sl.)
 
-Za izgradnju upotrijebite:
+## Modeli i enum-ovi
+
+- `ERacun` – zajednička baza za sve račune
+- `UlazniERacun` – ulazni račun s dodatnim statusom i metodama za odbijanje
+- `IzlazniERacun` – izlazni račun s dodatnim statusom i metodom za evidentiranje uplate
+- `ERacunNacinPlacanja` – načini plaćanja
+- `UlazniERacunStatus` / `IzlazniERacunStatus` – statusi računa
+- `RazlogOdbijanja` – razlozi odbijanja ulaznog računa
+
+## Dodatne informacije
+
+### Spremanje posrednika u listu
+
+Budući da sve konkretne implementacije nasljeđuju `Posrednik`, možete ih spremati u običan `List<Posrednik>`:
+
+```csharp
+using MAES.Fiskal2;
+using MAES.Fiskal2.Posrednici;
+
+var posrednici = new List<Posrednik>
+{
+    new Super
+    {
+        IsDev = true,
+        BusinessGuid = "BUSINESS_GUID",
+        Username = "USERNAME",
+        Password = "PASSWORD"
+    },
+    new EPoslovanje
+    {
+        IsDev = true,
+        ApiKey = "API_KEY"
+    }
+};
+
+foreach (var posrednik in posrednici)
+{
+    Console.WriteLine(posrednik.GetType().Name);
+}
+```
+
+Ovo je korisno ako želite voditi više konfiguracija posrednika u jednoj strukturi i pozivati iste metode nad njima kroz baznu klasu.
+
+### Serializacija u JSON
+
+Biblioteka koristi `System.Text.Json` i baza `Posrednik` je označena sa `JsonPolymorphic`/`JsonDerivedType`, što znači da možete lako spremiti i učitati različite tipove posrednika u JSON.
+
+```csharp
+using System.Text.Json;
+using MAES.Fiskal2;
+using MAES.Fiskal2.Posrednici;
+
+var options = new JsonSerializerOptions
+{
+    WriteIndented = true
+};
+
+var posrednici = new List<Posrednik>
+{
+    new Super
+    {
+        IsDev = true,
+        BusinessGuid = "BUSINESS_GUID",
+        Username = "USERNAME",
+        Password = "PASSWORD"
+    }
+};
+
+string json = JsonSerializer.Serialize(posrednici, options);
+File.WriteAllText("posrednici.json", json);
+
+var loaded = JsonSerializer.Deserialize<List<Posrednik>>(json, options);
+```
+
+U izlaznom JSON-u bit će prisutan polje `$type`, pa se prilikom deserijalizacije zna točno koji konkretni tip posrednika treba vratiti.
+
+### Dodatne napomene
+
+- `IsDev` određuje koristi li se razvojno ili produkcijsko okruženje.
+- Sve glavne metode podržavaju `CancellationToken` kao zadnji parametar.
+- Za `Fina` je potreban X.509 certifikat, a podrška za dohvat računa i PDF-a nije dostupna.
+- Ako koristite `ERacun` objekte, možete direktno pozivati `DohvatiUBLAsync()` i `DohvatiPdfAsync()` bez da svaki put ručno prolazite kroz posrednika.
+
+## Izgradnja i pakiranje
 
 ```bash
 dotnet build MAES.Fiskal2.csproj --configuration Release
 ```
 
-Ako želite napraviti NuGet paket:
-
 ```bash
 dotnet pack MAES.Fiskal2.csproj --configuration Release
 ```
 
-## Napomene
-
-- Projekt je u razvoju.
-- Neke metode još nisu implementirane.
-- Trenutna sučelja i model podataka mogu se mijenjati dok se dovršava podrška za različite posrednike.

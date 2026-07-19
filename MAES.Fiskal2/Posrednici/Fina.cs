@@ -87,7 +87,7 @@ public class Fina : Posrednik
     /// <param name="amount">Iznos uplate.</param>
     /// <param name="paymentMethod">Način plaćanja.</param>
     /// <param name="token">Cancellation token.</param>
-    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, NacinPlacanja paymentMethod, CancellationToken token = default) =>
+    public override async Task EvidentirajUplatuAsync(string id, DateTime date, double amount, ERacunNacinPlacanja paymentMethod, CancellationToken token = default) =>
         throw new NotSupportedException("Evidentiranje uplata nije podržano u FINA posredniku");
 
     /// <summary>
