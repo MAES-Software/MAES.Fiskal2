@@ -221,11 +221,15 @@ public class Super : Posrednik
     async Task<JsonDocument> postRequestAsync(string uri, Dictionary<string, string> body, CancellationToken cancellationToken = default)
     {
         // dohvati token ako ga nema ili je istekao
-        if (token == null || DateTime.UtcNow >= token.Value.Value)
+        if (token == null || DateTime.Now >= token.Value.Value)
         {
             using var tokenRequest = new HttpRequestMessage(HttpMethod.Post, "Token");
             tokenRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            tokenRequest.Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["grant_type"] = "password", ["username"] = Username, ["password"] = Password });
+            tokenRequest.Content = new FormUrlEncodedContent([
+                new ("grant_type", "password"),
+                new ("username", Username),
+                new ("password", Password)
+            ]);
 
             var tokenContent = await SendRequest(tokenRequest, cancellationToken);
 
